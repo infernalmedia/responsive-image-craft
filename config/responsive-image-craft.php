@@ -30,10 +30,10 @@ return [
         Manipulations::FORMAT_AVIF => [],
     ],
     'extensions_to_ignore' => [
-        'svg'
+        'svg',
     ],
     'filename_to_ignore' => [
-        'favicon'
+        'favicon',
     ],
     'supported_file_extensions' => [
         Manipulations::FORMAT_JPG,
@@ -42,8 +42,8 @@ return [
         Manipulations::FORMAT_AVIF,
         Manipulations::FORMAT_GIF,
         Manipulations::FORMAT_TIFF,
-        Manipulations::FORMAT_PJPG
+        Manipulations::FORMAT_PJPG,
     ],
     'filename_spacer' => '@',
-    'container_css_class_name' => 'img-container'
+    'container_css_class_name' => 'img-container',
 ];
