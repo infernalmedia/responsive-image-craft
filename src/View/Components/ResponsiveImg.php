@@ -1,6 +1,6 @@
 <?php
 
-namespace Infernalmedia\ResponsiveImageCraft\Components;
+namespace Infernalmedia\ResponsiveImageCraft\View\Components;
 
 use Closure;
 use Illuminate\Contracts\View\View;
@@ -44,14 +44,14 @@ class ResponsiveImg extends Component
      */
     public function render(): View|Closure|string
     {
-        return view('infernal::components.responsive-img');
+        return view('responsive-image-craft::components.responsive-img');
     }
 
     public function getContainerCssClass(): string
     {
         $cssClass = config('responsive-images.container_css_class_name');
 
-        if (! empty($this->containerClass)) {
+        if (!empty($this->containerClass)) {
             return "$cssClass {$this->containerClass}";
         }
 
@@ -124,7 +124,7 @@ class ResponsiveImg extends Component
 
     private function getFilteredSizes(): array
     {
-        if (! empty($this->width)) {
+        if (!empty($this->width)) {
             return array_filter(config('responsive-images.sizes'), function ($responsiveWidth) {
                 return $responsiveWidth <= $this->width;
             });
