@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton;
+namespace Infernalmedia\ResponsiveImageCraft;
 
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use VendorName\Skeleton\Commands\SkeletonCommand;
+use Infernalmedia\ResponsiveImageCraft\Commands\ResponsiveImageCraftCommand;
 
-class SkeletonServiceProvider extends PackageServiceProvider
+class ResponsiveImageCraftServiceProvider extends PackageServiceProvider
 {
     public function configurePackage(Package $package): void
     {
@@ -16,10 +16,10 @@ class SkeletonServiceProvider extends PackageServiceProvider
          * More info: https://github.com/spatie/laravel-package-tools
          */
         $package
-            ->name('skeleton')
+            ->name('responsive-image-craft')
             ->hasConfigFile()
             ->hasViews()
-            ->hasMigration('create_skeleton_table')
-            ->hasCommand(SkeletonCommand::class);
+            ->hasMigration('create_responsive-image-craft_table')
+            ->hasCommand(ResponsiveImageCraftCommand::class);
     }
 }

@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace Infernalmedia\ResponsiveImageCraft\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class ResponsiveImageCraftCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'responsive-image-craft';
 
     public $description = 'My command';
 
