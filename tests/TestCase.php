@@ -3,8 +3,8 @@
 namespace Infernalmedia\ResponsiveImageCraft\Tests;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Orchestra\Testbench\TestCase as Orchestra;
 use Infernalmedia\ResponsiveImageCraft\ResponsiveImageCraftServiceProvider;
+use Orchestra\Testbench\TestCase as Orchestra;
 
 class TestCase extends Orchestra
 {
