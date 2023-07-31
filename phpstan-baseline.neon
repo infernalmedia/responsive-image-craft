@@ -19,3 +19,8 @@ parameters:
 			message: "#^Expression \"self\\:\\:SUCCESS\" on a separate line does not do anything\\.$#"
 			count: 1
 			path: src/Commands/GenerateResponsiveImages.php
+
+		-
+			message: "#^Function ressource_path not found\\.$#"
+			count: 1
+			path: src/ResponsiveImageCraftServiceProvider.php
