@@ -1,0 +1,85 @@
+@use "sass:map";
+@use "sass:list";
+@use "sass:string";
+
+//https://stackoverflow.com/a/25975282
+@mixin for-safari {
+    @media not all and (min-resolution: 0.001dpcm) {
+        @supports (-webkit-appearance: none) {
+            @content;
+        }
+    }
+    @supports (-webkit-hyphens: none) {
+        @content;
+    }
+
+    @media not all and (min-resolution: 0.001dpcm) {
+        @supports (-webkit-appearance: none) and (stroke-color: transparent) {
+            @content;
+        }
+    }
+}
+
+@mixin media-query($width, $type: min) {
+    @if $type == max {
+        $width: $width - 1px;
+    }
+    @media only screen and (#{$type}-width: $width) {
+        @content;
+    }
+}
+
+$mimeTypes: (
+    "jpg": "image/jpeg",
+    "pjpg": "image/pjpg",
+    "png": "image/png",
+    "gif": "image/gif",
+    "webp": "image/webp",
+    "avif": "image/avif",
+    "tiff": "image/tiff",
+);
+
+@mixin responsive-background-image-from-existing-css-var(
+    $sizes,
+    $extensions,
+    $full
+) {
+    @each $size in $sizes {
+        $images: null;
+        @each $extension in $extensions {
+            @if $size == $full {
+                background-image: var(--#{$extension}-full);
+                $images: list.append(
+                    $images,
+                    var(--#{$extension}-full)
+                        type(string.quote(#{map.get($mimeTypes, $extension)})),
+                    $separator: comma
+                );
+                background-image: image-set($images);
+            } @else {
+                @include media-query($size, max) {
+                    background-image: var(--#{$extension}-#{$size});
+                    $images: list.append(
+                        $images,
+                        var(--#{$extension}-#{$size})
+                            type(
+                                string.quote(#{map.get($mimeTypes, $extension)})
+                            ),
+                        $separator: comma
+                    );
+                    background-image: image-set($images);
+                }
+            }
+        }
+    }
+}
+
+.img-container {
+    max-width: 100%;
+    height: auto;
+    img {
+        resize: both;
+        width: 100%;
+        height: auto;
+    }
+}

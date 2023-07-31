@@ -20,6 +20,24 @@ class ResponsiveImageCraftServiceProvider extends PackageServiceProvider
             ->name('responsive-image-craft')
             ->hasConfigFile()
             ->hasViewComponent('infernal', ResponsiveImg::class)
-            ->hasCommand(GenerateResponsiveImages::class);
+            ->hasCommand(GenerateResponsiveImages::class)
+            ->hasInstallCommand(function (InstallCommand $command) {
+                $command
+                    ->publishConfigFile()
+                    ->endWith(function (InstallCommand $command) {
+                        $command->info(
+                            "After setting scss directory in 'config/responsive-image-craft.php'
+                            run php artisan vendor:publish --tag=responsive-image-craft-scss"
+                        );
+                    });
+            });
+    }
+
+    public function packageBooted(): void
+    {
+        $this->publishes([
+            $this->package->basePath('/../resources/dist')
+            => config('responsive-image-craft.scss_path') ?? ressource_path("vendor/{$this->package->shortName()}"),
+        ], "{$this->package->shortName()}-scss");
     }
 }

@@ -44,4 +44,5 @@ return [
     ],
     'filename_spacer' => '@',
     'container_css_class_name' => 'img-container',
+    'scss_path' => resource_path('/scss/utilities'),
 ];
