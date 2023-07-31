@@ -2,8 +2,8 @@
 
 namespace Infernalmedia\ResponsiveImageCraft;
 
-use Infernalmedia\ResponsiveImageCraft\View\Components\ResponsiveImg;
 use Infernalmedia\ResponsiveImageCraft\Commands\GenerateResponsiveImages;
+use Infernalmedia\ResponsiveImageCraft\View\Components\ResponsiveImg;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 

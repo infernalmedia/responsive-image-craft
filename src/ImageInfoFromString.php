@@ -91,12 +91,12 @@ class ImageInfoFromString
 
     private function isAcceptedExtension(): bool
     {
-        return !in_array($this->getFileExtension(), $this->getExtensionsToIgnore());
+        return ! in_array($this->getFileExtension(), $this->getExtensionsToIgnore());
     }
 
     private function isAcceptedFileName(): bool
     {
-        return !in_array($this->getFilenameWithoutExtension(), $this->getFileNamesToIgnore());
+        return ! in_array($this->getFilenameWithoutExtension(), $this->getFileNamesToIgnore());
     }
 
     private function isImage(): bool

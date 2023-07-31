@@ -2,23 +2,23 @@
 
 namespace Infernalmedia\ResponsiveImageCraft\View\Components;
 
-use Infernalmedia\ResponsiveImageCraft\ImageInfoFromString;
 use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\View\Component;
+use Infernalmedia\ResponsiveImageCraft\ImageInfoFromString;
 
 class ResponsiveImg extends Component
 {
     private const MIME_TYPES = [
-        'jpg' => "image/jpeg",
-        'pjpg' => "image/pjpg",
-        'png' => "image/png",
-        'gif' => "image/gif",
-        'webp' => "image/webp",
-        'avif' => "image/avif",
-        'tiff' => "image/tiff",
+        'jpg' => 'image/jpeg',
+        'pjpg' => 'image/pjpg',
+        'png' => 'image/png',
+        'gif' => 'image/gif',
+        'webp' => 'image/webp',
+        'avif' => 'image/avif',
+        'tiff' => 'image/tiff',
     ];
 
     /**
@@ -51,7 +51,7 @@ class ResponsiveImg extends Component
     {
         $cssClass = config('responsive-images.container_css_class_name');
 
-        if (!empty($this->containerClass)) {
+        if (! empty($this->containerClass)) {
             return "$cssClass {$this->containerClass}";
         }
 
@@ -72,12 +72,13 @@ class ResponsiveImg extends Component
         if (Arr::exists(self::MIME_TYPES, $extension)) {
             return self::MIME_TYPES[$extension];
         }
+
         return '';
     }
 
     public function getSrcset(string $extension): string
     {
-        $srcset = "";
+        $srcset = '';
 
         $path = $this->getImageInfo()->getRelativePath();
         $filename = $this->getImageInfo()->getFilenameWithoutExtension();
@@ -113,7 +114,7 @@ class ResponsiveImg extends Component
 
     public function getAltAttribute(): string
     {
-        return empty($this->alt) ? config("app.name") : $this->alt;
+        return empty($this->alt) ? config('app.name') : $this->alt;
     }
 
     private function getImageInfo(): ImageInfoFromString
@@ -123,11 +124,12 @@ class ResponsiveImg extends Component
 
     private function getFilteredSizes(): array
     {
-        if (!empty($this->width)) {
+        if (! empty($this->width)) {
             return array_filter(config('responsive-images.sizes'), function ($responsiveWidth) {
                 return $responsiveWidth <= $this->width;
             });
         }
+
         return config('responsive-images.sizes');
     }
 
@@ -150,6 +152,7 @@ class ResponsiveImg extends Component
         if (empty($this->width)) {
             return max($this->getFilteredSizes());
         }
+
         return $this->width;
     }
 
