@@ -41,8 +41,6 @@ return [
         Manipulations::FORMAT_PNG,
         Manipulations::FORMAT_AVIF,
         Manipulations::FORMAT_GIF,
-        Manipulations::FORMAT_TIFF,
-        Manipulations::FORMAT_PJPG,
     ],
     'filename_spacer' => '@',
     'container_css_class_name' => 'img-container',
