@@ -2,6 +2,7 @@
 
 namespace Infernalmedia\ResponsiveImageCraft;
 
+use Infernalmedia\ResponsiveImageCraft\View\Components\ResponsiveImg;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -16,6 +17,7 @@ class ResponsiveImageCraftServiceProvider extends PackageServiceProvider
          */
         $package
             ->name('responsive-image-craft')
-            ->hasConfigFile();
+            ->hasConfigFile()
+            ->hasViewComponent('infernal', ResponsiveImg::class);
     }
 }
