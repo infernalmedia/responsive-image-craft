@@ -70,20 +70,22 @@ return [
     ],
     'filename_spacer' => '@',
     'container_css_class_name' => 'img-container'
+    'scss_path' => resource_path('/scss/utilities'),
 ];
 ```
 
-Optionally, you can publish the views using
+Optionally, you can publish the scss helper
 
 ```bash
-php artisan vendor:publish --tag="responsive-image-craft-views"
+php artisan vendor:publish --tag="responsive-image-craft-scss"
 ```
 
 ## Usage
 
+After configuring, the source and targets, run:
+
 ```php
-$responsiveImageCraft = new Infernalmedia\ResponsiveImageCraft();
-echo $responsiveImageCraft->echoPhrase('Hello, Infernalmedia!');
+php artisan image-craft:responsive-generate
 ```
 
 ## Testing
