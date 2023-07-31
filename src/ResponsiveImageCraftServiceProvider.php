@@ -17,9 +17,6 @@ class ResponsiveImageCraftServiceProvider extends PackageServiceProvider
          */
         $package
             ->name('responsive-image-craft')
-            ->hasConfigFile()
-            ->hasViews()
-            ->hasMigration('create_responsive-image-craft_table')
-            ->hasCommand(ResponsiveImageCraftCommand::class);
+            ->hasConfigFile();
     }
 }
