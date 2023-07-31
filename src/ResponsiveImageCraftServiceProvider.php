@@ -6,6 +6,7 @@ use Infernalmedia\ResponsiveImageCraft\Commands\GenerateResponsiveImages;
 use Infernalmedia\ResponsiveImageCraft\View\Components\ResponsiveImg;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
+use Spatie\LaravelPackageTools\Commands\InstallCommand;
 
 class ResponsiveImageCraftServiceProvider extends PackageServiceProvider
 {
