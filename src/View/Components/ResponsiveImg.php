@@ -51,7 +51,7 @@ class ResponsiveImg extends Component
     {
         $cssClass = config('responsive-images.container_css_class_name');
 
-        if (!empty($this->containerClass)) {
+        if (! empty($this->containerClass)) {
             return "$cssClass {$this->containerClass}";
         }
 
@@ -124,7 +124,7 @@ class ResponsiveImg extends Component
 
     private function getFilteredSizes(): array
     {
-        if (!empty($this->width)) {
+        if (! empty($this->width)) {
             return array_filter(config('responsive-images.sizes'), function ($responsiveWidth) {
                 return $responsiveWidth <= $this->width;
             });

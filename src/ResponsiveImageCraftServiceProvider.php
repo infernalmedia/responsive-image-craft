@@ -38,8 +38,7 @@ class ResponsiveImageCraftServiceProvider extends PackageServiceProvider
     public function packageBooted(): void
     {
         $this->publishes([
-            $this->package->basePath('../resources/scss')
-            => config('responsive-image-craft.scss_path') ?? ressource_path("vendor/{$this->package->shortName()}"),
+            $this->package->basePath('../resources/scss') => config('responsive-image-craft.scss_path') ?? ressource_path("vendor/{$this->package->shortName()}"),
         ], "{$this->package->shortName()}-scss");
     }
 }
