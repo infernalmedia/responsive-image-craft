@@ -4,9 +4,9 @@ namespace Infernalmedia\ResponsiveImageCraft;
 
 use Infernalmedia\ResponsiveImageCraft\Commands\GenerateResponsiveImages;
 use Infernalmedia\ResponsiveImageCraft\Components\ResponsiveImg;
+use Spatie\LaravelPackageTools\Commands\InstallCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Spatie\LaravelPackageTools\Commands\InstallCommand;
 
 class ResponsiveImageCraftServiceProvider extends PackageServiceProvider
 {
@@ -37,8 +37,7 @@ class ResponsiveImageCraftServiceProvider extends PackageServiceProvider
     public function packageBooted(): void
     {
         $this->publishes([
-            $this->package->basePath('../resources/dist')
-            => config('responsive-image-craft.scss_path') ?? ressource_path("vendor/{$this->package->shortName()}"),
+            $this->package->basePath('../resources/dist') => config('responsive-image-craft.scss_path') ?? ressource_path("vendor/{$this->package->shortName()}"),
         ], "{$this->package->shortName()}-scss");
     }
 }

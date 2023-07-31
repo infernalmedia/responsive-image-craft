@@ -2,8 +2,6 @@
 
 namespace Infernalmedia\ResponsiveImageCraft;
 
-use Infernalmedia\ResponsiveImageCraft\ImageInfoFromString;
-
 class ResponsiveImageCraft
 {
     public function getCssVariables(string $file, int $maxWidth, array $extensions = ['jpg', 'avif', 'webp'])
@@ -16,7 +14,7 @@ class ResponsiveImageCraft
         $cssVariables = $this->generateCssVariables($path, $extensions, 'full');
 
         foreach ($image->getFilteredSizes($maxWidth) as $width) {
-            $file = $path . $fileNameSpacer . $width;
+            $file = $path.$fileNameSpacer.$width;
             $cssVariables .= $this->generateCssVariables($file, $extensions, $width);
         }
 
