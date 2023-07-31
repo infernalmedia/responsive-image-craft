@@ -1,6 +1,6 @@
 <?php
 
-namespace Infernalmedia\ResponsiveImageCraft\View\Components;
+namespace Infernalmedia\ResponsiveImageCraft\Components;
 
 use Closure;
 use Illuminate\Contracts\View\View;
