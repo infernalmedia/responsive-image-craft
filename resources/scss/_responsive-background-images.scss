@@ -20,6 +20,11 @@
     }
 }
 
+/**
+* The `@mixin media-query` is a Sass mixin that generates media queries based on a given width and
+* type (defaulting to "min"). It allows you to write CSS rules that will only apply when the screen
+* width matches the specified condition.
+*/
 @mixin media-query($width, $type: min) {
     @if $type == max {
         $width: $width - 1px;
@@ -39,6 +44,10 @@ $mimeTypes: (
     "tiff": "image/tiff",
 );
 
+/**
+* The `@mixin responsive-background-image-from-existing-css-var` is a Sass mixin that generates
+* responsive background images based on existing CSS variables.
+*/
 @mixin responsive-background-image-from-existing-css-var(
     $sizes,
     $extensions,
@@ -74,6 +83,12 @@ $mimeTypes: (
     }
 }
 
+/**
+* The `.img-container` class is defining a responsive container for an image. It sets the maximum width of the
+* container to 100% of its parent element, ensuring that the image does not exceed the width of the
+* container. The height of the container is set to auto, allowing it to adjust proportionally based on
+* the width.
+*/
 .img-container {
     max-width: 100%;
     height: auto;

@@ -82,10 +82,44 @@ php artisan vendor:publish --tag="responsive-image-craft-scss"
 
 ## Usage
 
+### Images generations
+
 After configuring, the source and targets, run:
 
+```bash
+php artisan responsive-image-craft:generate
+```
+
+Optionally you can define the source
+
+```bash
+php artisan responsive-image-craft:generate --source-disk=local --relative-source-path=images
+```
+
+### Responsive Image Component 
+
 ```php
-php artisan image-craft:responsive-generate
+<x-infernal-responsive-img src="full/path/to/generated/image.original-extension"
+                            alt="the alternate text"
+                            container-class="the-css-class-to-add-to-the-wrapping-container" //optional
+                            height=1570 //original height
+                            width=1216 //original width
+                            :async-decoding="true" 
+                            :lazy="true" 
+                            :skip-picture-tag="true" 
+                            img-attributes="attributes to add to img tag" />
+```
+Will generate the following html
+```html
+<div class="img-container the-css-class-to-add-to-the-wrapping-container">
+    <picture>
+        <!-- load avif images if supported -->
+        <source type="image/avif" srcset="url-to-img@320.avif 320w, ....">
+        [...]
+        <!-- the img format fallback -->       
+        <img attributes to add to img tag src="url-to-img.jpg" srcset="url-to-img@320.jpg 320w,..." alt="the alternate text" decoding="async" loading="lazy" width="1570" height="1216">
+    </picture>
+</div>
 ```
 
 ## Testing
