@@ -118,7 +118,7 @@ class GenerateResponsiveImages extends Command
 
                 $this->storeFileToTarget($imageString, $tempFileName, $fileName);
                 $this->logGeneratedImages($imageString, $extension, $responsiveWidth);
-            } catch (CouldNotConvert | InvalidImageDriver | InvalidManipulation | InvalidTemporaryDirectory $e) {
+            } catch (CouldNotConvert|InvalidImageDriver|InvalidManipulation|InvalidTemporaryDirectory $e) {
                 $this->error($e->getMessage());
             } catch (Throwable $exception) {
                 $this->error($exception->getMessage());
@@ -181,7 +181,7 @@ class GenerateResponsiveImages extends Command
                 ->save($tempFileName);
             $this->storeFileToTarget($imageString, $tempFileName, $newFileName);
             $this->logGeneratedImages($imageString, $extension, $image->getWidth(), $newFileName);
-        } catch (CouldNotConvert | InvalidImageDriver | InvalidManipulation | InvalidTemporaryDirectory $e) {
+        } catch (CouldNotConvert|InvalidImageDriver|InvalidManipulation|InvalidTemporaryDirectory $e) {
             $this->logError($imageString, $e->getMessage());
             $this->error($e->getMessage());
         } catch (Throwable $exception) {
@@ -216,7 +216,6 @@ class GenerateResponsiveImages extends Command
      * The function returns the relative path of an image given an ImageInfoFromString object.
      *
      * @param ImageInfoFromString imageString An instance of the class `ImageInfoFromString`
-     *
      * @return string the relative path of the image as a string.
      */
     private function getTargetPath(ImageInfoFromString $imageString): string
@@ -230,7 +229,6 @@ class GenerateResponsiveImages extends Command
      *
      * @param ImageInfoFromString imageString The parameter `` is an instance of the
      * `ImageInfoFromString` class.
-     *
      * @return string a string that represents the target file path for the given ImageInfoFromString
      * object.
      */
@@ -251,7 +249,7 @@ class GenerateResponsiveImages extends Command
      */
     private function logError(ImageInfoFromString $imageString, string $message): void
     {
-        if (!Arr::exists($this->logArray['errors'], $imageString->getRelativePathname())) {
+        if (! Arr::exists($this->logArray['errors'], $imageString->getRelativePathname())) {
             $this->logArray['errors'][$imageString->getRelativePathname()] = [];
         }
 
@@ -282,14 +280,14 @@ class GenerateResponsiveImages extends Command
         int $width,
         string $newFileName = ''
     ): void {
-        if (!Arr::exists($this->logArray['generated'], $imageString->getRelativePathname())) {
+        if (! Arr::exists($this->logArray['generated'], $imageString->getRelativePathname())) {
             $this->logArray['generated'][$imageString->getRelativePathname()] = [];
         }
-        if (!Arr::exists($this->logArray['generated'][$imageString->getRelativePathname()], $extension)) {
+        if (! Arr::exists($this->logArray['generated'][$imageString->getRelativePathname()], $extension)) {
             $this->logArray['generated'][$imageString->getRelativePathname()][$extension] = [];
         }
 
-        $filName = !empty($newFileName) ?
+        $filName = ! empty($newFileName) ?
             $newFileName
             : "{$this->getTargetFilePath($imageString)}{$this->getFilenameSpacer()}$width.$extension";
 

@@ -15,7 +15,6 @@ class ResponsiveImageCraft
      * is smaller or equal to the maximum width.
      * @param array extensions An array of file extensions (e.g., ['jpg', 'avif', 'webp']) that will be
      * used to generate CSS variables for different image formats.
-     *
      * @return string a string containing CSS variables.
      */
     public function getCssVariables(string $file, int $maxWidth, array $extensions = ['jpg', 'avif', 'webp']): string
@@ -28,7 +27,7 @@ class ResponsiveImageCraft
         $cssVariables = $this->generateCssVariables($path, $extensions, 'full');
 
         foreach ($image->getFilteredSizes($maxWidth) as $width) {
-            $file = $path . $fileNameSpacer . $width;
+            $file = $path.$fileNameSpacer.$width;
             $cssVariables .= $this->generateCssVariables($file, $extensions, $width);
         }
 
@@ -43,7 +42,6 @@ class ResponsiveImageCraft
      * @param array extensions An array of file extensions (e.g., ['jpg', 'png', 'svg']).
      * @param string width The `` parameter can be either a string or an integer. It represents the
      * width of an element in CSS.
-     *
      * @return string a string containing CSS variables.
      */
     private function generateCssVariables(string $path, array $extensions, string|int $width): string

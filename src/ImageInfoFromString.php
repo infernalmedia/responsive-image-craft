@@ -11,8 +11,8 @@ use Illuminate\Support\Str;
  * It provides methods to retrieve various details about the file, such as the absolute path, relative
  * path, file name, file extension, and more. It also includes methods to check if the file is a
  * supported image file and if it meets certain criteria, such as accepted extensions and file names.
- * @param string file The `file` parameter is the string path to the file
  *
+ * @param string file The `file` parameter is the string path to the file
  */
 class ImageInfoFromString
 {
@@ -53,7 +53,6 @@ class ImageInfoFromString
     {
         return $this->file;
     }
-
 
     /**
      * The function returns the relative pathname of the file without its extension.
@@ -128,7 +127,6 @@ class ImageInfoFromString
      *
      * @param int imagMaxWidth The `imagMaxWidth` parameter is an integer representing the maximum width of
      * an image.
-     *
      * @return array An array of sizes that are less than or equal to the given ``.
      */
     public function getFilteredSizes(int $imagMaxWidth): array
@@ -145,7 +143,7 @@ class ImageInfoFromString
      */
     private function isAcceptedExtension(): bool
     {
-        return !in_array($this->getFileExtension(), $this->getExtensionsToIgnore());
+        return ! in_array($this->getFileExtension(), $this->getExtensionsToIgnore());
     }
 
     /**
@@ -155,7 +153,7 @@ class ImageInfoFromString
      */
     private function isAcceptedFileName(): bool
     {
-        return !in_array($this->getFilenameWithoutExtension(), $this->getFileNamesToIgnore());
+        return ! in_array($this->getFilenameWithoutExtension(), $this->getFileNamesToIgnore());
     }
 
     /**

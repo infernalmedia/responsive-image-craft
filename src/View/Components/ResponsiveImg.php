@@ -50,7 +50,7 @@ class ResponsiveImg extends Component
     {
         $cssClass = config('responsive-image-craft.container_css_class_name');
 
-        if (!empty($this->containerClass)) {
+        if (! empty($this->containerClass)) {
             return "$cssClass {$this->containerClass}";
         }
 
@@ -76,7 +76,6 @@ class ResponsiveImg extends Component
      * The getImageType function returns the MIME type of an image based on its file extension.
      *
      * @param string extension A string representing the file extension of an image file.
-     *
      * @return string a string value. If the given extension exists in the `MIME_TYPES` array, it will
      * return the corresponding value from the array. Otherwise, it will return an empty string.
      */
@@ -95,7 +94,6 @@ class ResponsiveImg extends Component
      *
      * @param string extension The parameter "extension" is a string that represents the file extension of
      * the image. It is used to construct the image filenames in the srcset.
-     *
      * @return string a string that represents the srcset attribute value for an image.
      */
     public function getSrcset(string $extension): string
@@ -139,6 +137,7 @@ class ResponsiveImg extends Component
      * The function returns the loading type, either "lazy" or "eager", based on the value of the "lazy"
      * property.
      * Images in First Contentful Paint should be eager loaded
+     *
      * @see https://developer.mozilla.org/docs/Web/API/HTMLImageElement/loading
      *
      * @return string The method is returning a string value. If the `lazy` property is true, it will
@@ -151,6 +150,7 @@ class ResponsiveImg extends Component
 
     /**
      * The function returns the decoding mode, either 'async' or 'auto'.
+     *
      * @see https://developer.mozilla.org/docs/Web/API/HTMLImageElement/decoding
      *
      * @return string The method is returning a string value. If the value of the property `asyncDecoding`
@@ -192,7 +192,7 @@ class ResponsiveImg extends Component
      */
     private function getFilteredSizes(): array
     {
-        if (!empty($this->width)) {
+        if (! empty($this->width)) {
             return array_filter(config('responsive-image-craft.sizes'), function ($responsiveWidth) {
                 return $responsiveWidth <= $this->width;
             });
@@ -264,9 +264,9 @@ class ResponsiveImg extends Component
     public function getUrlBasePath(): string
     {
         if ($this->useResponsiveImages()) {
-            return config('filesystems.disks.' . config("responsive-image-craft.target_disk") . '.url');
+            return config('filesystems.disks.'.config('responsive-image-craft.target_disk').'.url');
         }
 
-        return config('filesystems.disks.' . config("responsive-image-craft.source_disk") . '.url');
+        return config('filesystems.disks.'.config('responsive-image-craft.source_disk').'.url');
     }
 }
