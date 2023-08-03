@@ -21,7 +21,7 @@ return [
     | The `sizes` array contains a list of image sizes in pixels. These sizes are used to generate
     | responsive images with different dimensions.
     */
-    'sizes' => explode(',', env('RESPONSIVE_IMAGES_SIZES', "320,640,880,1024,1200,1760,2100")),
+    'sizes' => explode(',', env('RESPONSIVE_IMAGES_SIZES', '320,640,880,1024,1200,1760,2100')),
 
     /*
     | The `extensions` array contains a list of image formats that are supported by the code. These

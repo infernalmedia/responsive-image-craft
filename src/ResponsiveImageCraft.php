@@ -22,7 +22,7 @@ class ResponsiveImageCraft
         $image = new ImageInfoFromString($file);
         $path = $image->getRelativePathnameWithoutExtension();
 
-        if (!filter_var($path, FILTER_VALIDATE_URL) && config('responsive-image-craft.use_responsive_images')) {
+        if (! filter_var($path, FILTER_VALIDATE_URL) && config('responsive-image-craft.use_responsive_images')) {
             if (str_starts_with($path, '.')) {
                 $path = ltrim($path, '.');
             }
@@ -30,7 +30,7 @@ class ResponsiveImageCraft
                 $path = ltrim($path, '/');
             }
 
-            $baseUrl = config('filesystem.' . config('responsive-image-craft.source_disk') . '.url');
+            $baseUrl = config('filesystem.'.config('responsive-image-craft.source_disk').'.url');
             if (str_ends_with($baseUrl, '/')) {
                 $baseUrl = rtrim($baseUrl, '/');
             }
@@ -38,13 +38,12 @@ class ResponsiveImageCraft
             $path = "{$baseUrl}/{$path}";
         }
 
-
         $fileNameSpacer = config('responsive-images.filename_spacer');
 
         $cssVariables = $this->generateCssVariables($path, $extensions, 'full');
 
         foreach ($image->getFilteredSizes($maxWidth) as $width) {
-            $file = $path . $fileNameSpacer . $width;
+            $file = $path.$fileNameSpacer.$width;
             $cssVariables .= $this->generateCssVariables($file, $extensions, $width);
         }
 
