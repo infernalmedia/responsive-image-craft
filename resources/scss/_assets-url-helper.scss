@@ -1,0 +1,208 @@
+@use 'sass:map';
+@use 'sass:string';
+@use 'sass:list';
+@use '../assets' as *;
+
+$assetsUrl: null !default;
+$filenameSpacer: '@' !default;
+
+/**
+ * Remove the file extension from a given absolute URL.
+ *
+ * @param {string} $url - The absolute URL with an extension.
+ * @return {string} - The URL without the file extension.
+ */
+@function remove-extension($url) {
+    $extension: get-extension($url);
+    $extension-index: string.index($url, '.#{$extension}');
+    @if $extension-index > 1 {
+        @return string.slice($url, 1, $extension-index - 1);
+    } @else {
+        @error "Unable to remove extension suffix for : #{$url}";
+    }
+}
+
+/**
+ * Extract the file extension from an absolute URL.
+ *
+ * @param {string} $url - The absolute URL containing the file.
+ * @return {string} - The extracted file extension or error if not found.
+ */
+@function get-extension($url) {
+    $parts: string.split(($url), '.');
+    $parts-count: length($parts);
+    @if $parts-count > 1 {
+        $extension: nth($parts, $parts-count);
+        @return $extension;
+    } @else {
+        @error "Missing extension suffix in file url e.g.: path/to/file.jpg : #{$url}";
+    }
+}
+
+/**
+ * Retrieve the MIME type from the extension using a map.
+ *
+ * @param {string} $extension - The file extension.
+ * @return {string|null} - The corresponding MIME type or null if not found.
+ */
+@function get-mime-type($extension) {
+    $mimeTypes: (
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'pjpg': 'image/pjpg',
+        'png': 'image/png',
+        'gif': 'image/gif',
+        'webp': 'image/webp',
+        'avif': 'image/avif',
+        'tiff': 'image/tiff',
+    );
+
+    $type: map-get($mimeTypes, quote($extension));
+    @if ($type) {
+        @return quote($type);
+    } @else {
+        @error "Mime Type not found for '#{$extension}'";
+    }
+}
+
+/**
+ * Retrieve the MIME type from an image URL.
+ *
+ * @param {string} $url - The absolute URL of the image.
+ * @return {string|null} - The corresponding MIME type or null if not found.
+ */
+@function get-mime-type-from-url($url) {
+    $extension: get-extension($url);
+    @return get-mime-type($extension);
+}
+
+/**
+ * Construct an assets URL by combining a relative URL and an optional base URL.
+ *
+ * @param {string} $relative-url - The relative path to the asset.
+ * @param {string} [$base-url=$assetsUrl] - The optional base URL.
+ * @return {url} - The constructed URL for the asset.
+ */
+@function construct-assets-url($relative-url, $base-url: $assetsUrl) {
+    $separator: if($base-url and str-slice($base-url, -1) != '/', '/', '');
+
+    @if $base-url {
+        @return url('#{$base-url}#{$separator}#{$relative-url}');
+    } @else {
+        @return url($relative-url);
+    }
+}
+
+/**
+ * Generate URLs for images with various extensions and optional suffix.
+ *
+ * @param {string} $relative-path - The relative path to the image without extension.
+ * @param {list} $extensions - List of image extensions.
+ * @param {string} [$base-url=$assetsUrl] - The optional base URL for assets.
+ * @param {string} [$file-name-spacer=$filenameSpacer] - Spacer between filename and suffix.
+ * @param {string} [$suffix=null] - Optional suffix to append before the extension.
+ * @return {map} - List of generated URLs for images with extensions.
+ */
+@function generate-image-urls(
+    $relative-path,
+    $extensions,
+    $base-url: $assetsUrl,
+    $file-name-spacer: $filenameSpacer,
+    $suffix: null
+) {
+    $urls: ();
+
+    $relative-path: remove-extension($relative-path);
+    @each $extension in $extensions {
+        $url: '';
+        @if ($suffix != null) {
+            $url: construct-image-url(
+                '#{$relative-path}#{$file-name-spacer}#{$suffix}.#{$extension}',
+                $base-url
+            );
+        } @else {
+            $url: construct-image-url(
+                '#{$relative-path}.#{$extension}',
+                $base-url
+            );
+        }
+
+        $urls: map.set($urls, $extension, $url);
+    }
+
+    @return $urls;
+}
+
+/**
+ * Generate URLs for image variants with different suffixes and extensions.
+ *
+ * @param {string} $base-relative-path - The base relative path to the image without extension or suffix.
+ * @param {list} $breakpoints - List of suffixes (e.g.: width) for the image variants.
+ * @param {list} $extensions - List of image extensions for the variants.
+ * @param {string} [$base-url=$assetsUrl] - The optional base URL for assets.
+ * @param {string} [$file-name-spacer=$filenameSpacer] - Spacer between filename and suffix.
+ * @return {map} - Map of generated URLs for image variants.
+ */
+@function generate-image-variants(
+    $base-relative-path,
+    $breakpoints,
+    $extensions,
+    $base-url: $assetsUrl,
+    $file-name-spacer: $filenameSpacer
+) {
+    $variant-urls: ();
+
+    @each $breakpoint in $breakpoints {
+        $variant-urls: map.set(
+            $variant-urls,
+            $breakpoint,
+            generate-image-urls(
+                $base-relative-path,
+                $extensions,
+                $base-url,
+                $file-name-spacer,
+                $breakpoint
+            )
+        );
+    }
+
+    @return $variant-urls;
+}
+
+/**
+ * Constructs an image URL based on the relative URL and an optional base URL.
+ *
+ * @param {string} $relative-url - The relative URL of the image.
+ * @param {string|null} [$base-url=null] - The base URL for constructing the image URL.
+ * @return {string} - The constructed image URL.
+ */
+@function construct-image-url($relative-url, $base-url: $assetsUrl) {
+    @if $base-url {
+        $separator: '';
+        $lastSlashIndex: string.index($base-url, '/');
+        @if ($lastSlashIndex == string.length($base-url) -1) {
+            $separator: '/';
+        }
+        @return url(quote('#{$base-url}#{$separator}#{$relative-url}'));
+    } @else {
+        @return url(quote($relative-url));
+    }
+}
+
+/**
+ * Generates an image set for multiple image variants.
+ *
+ * @param {map} $variants - A map containing image extension and URL pairs.
+ * @return {list} - The generated image set for use in image-set().
+ */
+@function generate-image-set($variants) {
+    $imageSet: ();
+    @each $extension, $url in $variants {
+        $imageSet: list.append(
+            $imageSet,
+            $url type(get-mime-type($extension)),
+            $separator: comma
+        );
+    }
+    @return $imageSet;
+}

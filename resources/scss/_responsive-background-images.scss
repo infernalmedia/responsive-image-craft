@@ -1,30 +1,15 @@
 @use "sass:map";
 @use "sass:list";
 @use "sass:string";
-
-//https://stackoverflow.com/a/25975282
-@mixin for-safari {
-    @media not all and (min-resolution: 0.001dpcm) {
-        @supports (-webkit-appearance: none) {
-            @content;
-        }
-    }
-    @supports (-webkit-hyphens: none) {
-        @content;
-    }
-
-    @media not all and (min-resolution: 0.001dpcm) {
-        @supports (-webkit-appearance: none) and (stroke-color: transparent) {
-            @content;
-        }
-    }
-}
+@use "../assets" as *;
+@use "assets-url-helper" as *;
 
 /**
-* The `@mixin media-query` is a Sass mixin that generates media queries based on a given width and
-* type (defaulting to "min"). It allows you to write CSS rules that will only apply when the screen
-* width matches the specified condition.
-*/
+ * Mixin to create a media query based on width.
+ *
+ * @param {string} $width - The width breakpoint.
+ * @param {string} [$type=min] - The type of media query (min or max).
+ */
 @mixin media-query($width, $type: min) {
     @if $type == max {
         $width: $width - 1px;
@@ -34,34 +19,26 @@
     }
 }
 
-$mimeTypes: (
-    "jpg": "image/jpeg",
-    "pjpg": "image/pjpg",
-    "png": "image/png",
-    "gif": "image/gif",
-    "webp": "image/webp",
-    "avif": "image/avif",
-    "tiff": "image/tiff",
-);
-
 /**
-* The `@mixin responsive-background-image-from-existing-css-var` is a Sass mixin that generates
-* responsive background images based on existing CSS variables.
-*/
+ * Mixin to generate responsive background images using existing CSS vars.
+ *
+ * @param {list} $sizes - List of sizes (breakpoints).
+ * @param {list} $extensions - List of image extensions.
+ * @param {string} $full - The 'full' size.
+ */
 @mixin responsive-background-image-from-existing-css-var(
     $sizes,
     $extensions,
     $full
 ) {
     @each $size in $sizes {
-        $images: null;
+        $images: ();
         @each $extension in $extensions {
             @if $size == $full {
                 background-image: var(--#{$extension}-full);
                 $images: list.append(
                     $images,
-                    var(--#{$extension}-full)
-                        type(string.quote(#{map.get($mimeTypes, $extension)})),
+                    var(--#{$extension}-full) type(get-mime-type($extension)),
                     $separator: comma
                 );
                 background-image: image-set($images);
@@ -71,9 +48,7 @@ $mimeTypes: (
                     $images: list.append(
                         $images,
                         var(--#{$extension}-#{$size})
-                            type(
-                                string.quote(#{map.get($mimeTypes, $extension)})
-                            ),
+                            type(get-mime-type($extension)),
                         $separator: comma
                     );
                     background-image: image-set($images);
@@ -84,10 +59,56 @@ $mimeTypes: (
 }
 
 /**
-* The `.img-container` class is defining a responsive container for an image. It sets the maximum width of the
-* container to 100% of its parent element, ensuring that the image does not exceed the width of the
-* container. The height of the container is set to auto, allowing it to adjust proportionally based on
-* the width.
+ * Mixin to generate responsive background images.
+ *
+ * @param {string} $base-relative-path - The base relative path.
+ * @param {list} $extensions - List of image extensions.
+ * @param {list} $breakpoints - List of existing images for each breakpoints.
+ * @param {string} [$file-name-spacer=$filenameSpacer] - Spacer between filename and size.
+ */
+@mixin responsive-background-image(
+    $base-relative-path,
+    $extensions,
+    $breakpoints,
+    $file-name-spacer: $filenameSpacer
+) {
+    $default-extension: get-extension($base-relative-path);
+    $variant-urls: generate-image-variants(
+        $base-relative-path,
+        $breakpoints,
+        $extensions
+    );
+
+    @each $breakpoint, $variants in $variant-urls {
+        @include media-query($breakpoint, max) {
+            $bgImage: map.get($variants, $default-extension);
+            background-image: $bgImage;
+            $imageSet: ();
+            @each $extension, $url in $variants {
+                $imageSet: list.append(
+                    $imageSet,
+                    $url type(get-mime-type($extension)),
+                    $separator: comma
+                );
+            }
+            background-image: image-set($imageSet);
+        }
+    }
+
+    $original-img-variants: generate-image-urls(
+        $base-relative-path,
+        $extensions
+    );
+    background-image: construct-image-url($base-relative-path);
+    background-image: image-set(generate-image-set($original-img-variants));
+}
+
+/**
+* The `.img-container` class is defining the styles for an image container. It sets the maximum width
+* of the container to 100% of its parent element, and the height to auto, allowing the image to scale
+* proportionally. Inside the container, the `img` element is styled to have a width of 100% and a
+* height of auto, ensuring that the image fills the container while maintaining its aspect ratio. The
+* `resize: both;` property allows the user to resize the image both horizontally and vertically.
 */
 .img-container {
     max-width: 100%;

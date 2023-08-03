@@ -21,15 +21,7 @@ return [
     | The `sizes` array contains a list of image sizes in pixels. These sizes are used to generate
     | responsive images with different dimensions.
     */
-    'sizes' => [
-        320,
-        640,
-        880,
-        1024,
-        1200,
-        1760,
-        2100,
-    ],
+    'sizes' => explode(',', env('RESPONSIVE_IMAGES_SIZES', "320,640,880,1024,1200,1760,2100")),
 
     /*
     | The `extensions` array contains a list of image formats that are supported by the code. These
@@ -109,4 +101,11 @@ return [
     | configuration option is used to specify the path to the SCSS where .scss files should be copy
     */
     'scss_path' => resource_path('/scss/utilities'),
+
+    /*
+    | The line `'js_path' => resource_path('/js'),` is setting the value of the `'js_path'`
+    | configuration option to the path `/js` within the `resources` directory. This configuration
+    | option is used to specify the path to the JavaScript files that should be copied.
+    */
+    'js_path' => resource_path('/js'),
 ];
