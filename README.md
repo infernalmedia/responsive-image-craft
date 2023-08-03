@@ -117,23 +117,23 @@ Will generate the following html
 
 #### The following attributes are available for customization
 
-- `$alt`
+- `$alt`  
 The alternative text for the image. [Learn more](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-alt)
-- `$skipPictureTag`
+- `$skipPictureTag`  
 A flag to skip the `picture` tag and only render the `img` tag.
-- `$src`
+- `$src`  
 The image relative path.
-- `$height`
+- `$height`  
 The height of the original image. [Learn more](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-height)
-- `$width`
+- `$width`  
 The width of the original image. [Learn more](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-width)
-- `$asyncDecoding`
+- `$asyncDecoding`  
 Enable async decoding of the image. This can improve page load performance by decoding images in the background. [Learn more](https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/decoding)
-- `$lazy`
+- `$lazy`  
 Enable lazy loading of the image. When set to true, the image will load only when it's visible in the viewport. [Learn more](https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/loading)
-- `$containerClass`
+- `$containerClass`  
 CSS class to add to the wrapping top `<div>`. You can apply custom styling using this class.
-- `$imgAttributes`
+- `$imgAttributes`  
 Additional html attributes to be added to the `img` tag. e.g.:`"class=img-class data-attribute=attribute"`
 
 
@@ -189,7 +189,7 @@ The Responsive Image SCSS module provides useful mixins and styles for creating 
    .example-class {
        @include responsive-background-image-from-existing-css-var(
            $sizes: (480px, 768px, 1024px),
-           $extensions: ('jpg', 'webp'),
+           $extensions: ('webp', 'jpg'),
            $full: 'full'
        );
    }
@@ -201,12 +201,13 @@ The Responsive Image SCSS module provides useful mixins and styles for creating 
    .example-class {
        @include responsive-background-image(
            $base-relative-path: "images/example.jpg",
-           $extensions: ('jpg', 'webp'),
+           $extensions: ('webp', 'jpg'),
            $breakpoints: (480px, 768px, 1024px),
            $file-name-spacer: '@'
        );
    }
    ```
+Be careful, the extensions list order will define the browser preference.  
 
 Other useful functions are available in `/scss/_assets-url-helper.scss`
 ## Testing
