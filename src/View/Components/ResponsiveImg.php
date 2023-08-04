@@ -8,6 +8,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\View\Component;
 use Infernalmedia\ResponsiveImageCraft\ImageInfoFromString;
+use Infernalmedia\Exceptions\InvalidDiskException;
 
 class ResponsiveImg extends Component
 {
@@ -50,7 +51,7 @@ class ResponsiveImg extends Component
     {
         $cssClass = config('responsive-image-craft.container_css_class_name');
 
-        if (! empty($this->containerClass)) {
+        if (!empty($this->containerClass)) {
             return "$cssClass {$this->containerClass}";
         }
 
@@ -192,7 +193,7 @@ class ResponsiveImg extends Component
      */
     private function getFilteredSizes(): array
     {
-        if (! empty($this->width)) {
+        if (!empty($this->width)) {
             return array_filter(config('responsive-image-craft.sizes'), function ($responsiveWidth) {
                 return $responsiveWidth <= $this->width;
             });
@@ -263,10 +264,16 @@ class ResponsiveImg extends Component
      */
     public function getUrlBasePath(): string
     {
+        $disk =  config('filesystems.disks.' . config('responsive-image-craft.source_disk'));
+
         if ($this->useResponsiveImages()) {
-            return config('filesystems.disks.'.config('responsive-image-craft.target_disk').'.url');
+            $disk = config('filesystems.disks.' . config('responsive-image-craft.target_disk'));
         }
 
-        return config('filesystems.disks.'.config('responsive-image-craft.source_disk').'.url');
+        if (!Arr::exists($disk, 'url')) {
+            throw InvalidDiskException::urlIsMissing();
+        }
+
+        return $disk['url'];
     }
 }
