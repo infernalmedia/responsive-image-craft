@@ -88,29 +88,27 @@ Optionally you can define the source
 php artisan responsive-image-craft:generate --source-disk=public --relative-source-path=images
 ```
 
-### Responsive Image Component 
+### Responsive Image Component
+
+Here is a basic working configuration
 
 ```php
 <x-infernal-responsive-img src="full/path/to/generated/image.original-extension"
                             alt="the alternate text"
-                            container-class="the-css-class-to-add-to-the-wrapping-container" //optional
-                            height=1570 //original height
-                            width=1216 //original width
-                            :async-decoding="true" 
-                            :lazy="true" 
-                            :skip-picture-tag="true" 
-                            img-attributes="attributes to add to img tag" />
+                            height=1570 {{-- original height --}}
+                            width=1216 {{-- original width --}} />
 ```
+
 Will generate the following html
 
 ```html
 <div class="img-container the-css-class-to-add-to-the-wrapping-container">
     <picture>
         <!-- load avif images if supported -->
-        <source type="image/avif" srcset="url-to-img@320.avif 320w, ....">
+        <source type="image/avif" srcset="url-to-img@320.avif 320w, ....{until 1216w}">
         [...]
         <!-- the img format fallback -->       
-        <img attributes to add to img tag src="url-to-img.jpg" srcset="url-to-img@320.jpg 320w,..." alt="the alternate text" decoding="async" loading="lazy" width="1570" height="1216">
+        <img src="url-to-img.jpg" srcset="url-to-img@320.jpg 320w,...{until 1216w}" alt="the alternate text" decoding="async" loading="lazy" width="1216" height="1570">
     </picture>
 </div>
 ```
@@ -126,7 +124,8 @@ The image relative path.
 - `$height`  
 The height of the original image. [Learn more](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-height)
 - `$width`  
-The width of the original image. [Learn more](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-width)
+The width of the original image [Learn more](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-width).   The width value will define de maximum available image width, following the generated ones. 
+
 - `$asyncDecoding`  
 Enable async decoding of the image. This can improve page load performance by decoding images in the background. [Learn more](https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/decoding)
 - `$lazy`  
@@ -136,11 +135,40 @@ CSS class to add to the wrapping top `<div>`. You can apply custom styling using
 - `$imgAttributes`  
 Additional html attributes to be added to the `img` tag. e.g.:`"class=img-class data-attribute=attribute"`
 
+Here is complete example:
 
+```php
+<x-infernal-responsive-img src="full/path/to/generated/image.original-extension"
+                            alt="the alternate text"
+                            container-class="the-css-class-to-add-to-the-wrapping-container" {{-- optional --}}
+                            height=1570 {{-- original height --}}
+                            width=1216 {{-- original width --}}
+                            :async-decoding="true" 
+                            :lazy="true" 
+                            :skip-picture-tag="false" 
+                            img-attributes="attributes to add to img tag" />
+```
+
+Will generate the following html
+
+```html
+<div class="img-container the-css-class-to-add-to-the-wrapping-container">
+    <picture>
+        <!-- load avif images if supported -->
+        <source type="image/avif" srcset="url-to-img@320.avif 320w, ....{until 1216w}">
+        [...]
+        <!-- the img format fallback -->       
+        <img attributes to add to img tag src="url-to-img.jpg" srcset="url-to-img@320.jpg 320w,...{until 1216w}" alt="the alternate text" decoding="async" loading="lazy" width="1216" height="1570">
+    </picture>
+</div>
+```
 
 ### Using responsive image with Sass (and ViteJs)
+
 #### Configuration
+
 Set your vite.config.js to give env variables to your scss
+
 ```js
 import { defineConfig, loadEnv } from 'vite'
 import laravel from 'laravel-vite-plugin'
@@ -207,9 +235,11 @@ The Responsive Image SCSS module provides useful mixins and styles for creating 
        );
    }
    ```
+
 Be careful, the extensions list order will define the browser preference.  
 
 Other useful functions are available in `/scss/_assets-url-helper.scss`
+
 ## Testing
 
 ```bash
