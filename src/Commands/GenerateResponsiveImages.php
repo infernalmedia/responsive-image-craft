@@ -45,13 +45,13 @@ class GenerateResponsiveImages extends Command
             $this->newLine(3);
             $this->info("$this->generatedImages responsive images generated successfully from $this->treatedImages!");
 
-            self::SUCCESS;
+            return Command::SUCCESS;
         } catch (Throwable $exception) {
             $this->newLine();
             $this->warn("$this->generatedImages responsive images generated successfully from $this->treatedImages!");
             $this->warn("$this->imagesInError images has error!");
             $this->error($exception->getMessage());
-            self::FAILURE;
+            return Command::FAILURE;
         }
     }
 
