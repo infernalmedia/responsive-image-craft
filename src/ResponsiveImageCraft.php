@@ -11,11 +11,11 @@ class ResponsiveImageCraft
      * versions based on the maximum width provided.
      * The variable is intended to be used in the `background-image` css property.
      *
-     * @param string $file The file parameter is a string that represents the path to an image file.
-     * @param int $maxWidth The  parameter is an integer that represents the maximum width of the
+     * @param  string  $file The file parameter is a string that represents the path to an image file.
+     * @param  int  $maxWidth The  parameter is an integer that represents the maximum width of the
      * image. It is used to filter the available image sizes and generate CSS variables for each size that
      * is smaller or equal to the maximum width.
-     * @param array $extensions An array of file extensions (e.g., ['jpg', 'avif', 'webp']) that will be
+     * @param  array  $extensions An array of file extensions (e.g., ['jpg', 'avif', 'webp']) that will be
      * used to generate CSS variables for different image formats.
      * @return string a string containing CSS variables.
      */
@@ -24,7 +24,7 @@ class ResponsiveImageCraft
         $image = new ImageInfoFromString($file);
         $path = $image->getRelativePathnameWithoutExtension();
 
-        if (!filter_var($path, FILTER_VALIDATE_URL) && config('responsive-image-craft.use_responsive_images')) {
+        if (! filter_var($path, FILTER_VALIDATE_URL) && config('responsive-image-craft.use_responsive_images')) {
             if (str_starts_with($path, '.')) {
                 $path = ltrim($path, '.');
             }
@@ -32,7 +32,7 @@ class ResponsiveImageCraft
                 $path = ltrim($path, '/');
             }
 
-            $baseUrl = config('filesystem.' . config('responsive-image-craft.source_disk') . '.url');
+            $baseUrl = config('filesystem.'.config('responsive-image-craft.source_disk').'.url');
 
             if (empty($baseUrl)) {
                 throw InvalidDiskException::urlIsMissing();
@@ -50,7 +50,7 @@ class ResponsiveImageCraft
         $cssVariables = $this->generateCssVariables($path, $extensions, 'full');
 
         foreach ($image->getFilteredSizes($maxWidth) as $width) {
-            $file = $path . $fileNameSpacer . $width;
+            $file = $path.$fileNameSpacer.$width;
             $cssVariables .= $this->generateCssVariables($file, $extensions, $width);
         }
 
@@ -60,10 +60,10 @@ class ResponsiveImageCraft
     /**
      * The function generates CSS variables for a given path, array of extensions, and width.
      *
-     * @param string $path The path parameter is a string that represents the base path or URL of the image
+     * @param  string  $path The path parameter is a string that represents the base path or URL of the image
      * file.
-     * @param array $extensions An array of file extensions (e.g., ['jpg', 'png', 'svg']).
-     * @param string $width The `` parameter can be either a string or an integer. It represents the
+     * @param  array  $extensions An array of file extensions (e.g., ['jpg', 'png', 'svg']).
+     * @param  string  $width The `` parameter can be either a string or an integer. It represents the
      * width of an element in CSS.
      * @return string a string containing CSS variables.
      */

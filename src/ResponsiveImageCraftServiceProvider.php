@@ -48,7 +48,7 @@ class ResponsiveImageCraftServiceProvider extends PackageServiceProvider
 
         $params = [
             $scssSourcePath => $scssTargetPath,
-            $jsSourcePath => $jsTargetPath
+            $jsSourcePath => $jsTargetPath,
         ];
 
         $this->publishes($params, "{$packageShortname}-scss");
