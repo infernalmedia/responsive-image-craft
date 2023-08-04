@@ -4,7 +4,7 @@ namespace Infernalmedia\ResponsiveImageCraft\Exceptions;
 
 use Exception;
 
-class InvalidDiskException extends Exception
+final class InvalidDiskException extends Exception
 {
     public static function urlIsMissing(): self
     {
