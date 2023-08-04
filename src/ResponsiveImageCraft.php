@@ -2,6 +2,8 @@
 
 namespace Infernalmedia\ResponsiveImageCraft;
 
+use Infernalmedia\ResponsiveImageCraft\Exceptions\InvalidDiskException;
+
 class ResponsiveImageCraft
 {
     /**
@@ -31,6 +33,11 @@ class ResponsiveImageCraft
             }
 
             $baseUrl = config('filesystem.' . config('responsive-image-craft.source_disk') . '.url');
+
+            if (empty($baseUrl)) {
+                throw InvalidDiskException::urlIsMissing();
+            }
+
             if (str_ends_with($baseUrl, '/')) {
                 $baseUrl = rtrim($baseUrl, '/');
             }
