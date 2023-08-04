@@ -7,8 +7,8 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\View\Component;
+use Infernalmedia\ResponsiveImageCraft\Exceptions\InvalidDiskException;
 use Infernalmedia\ResponsiveImageCraft\ImageInfoFromString;
-use Infernalmedia\Exceptions\InvalidDiskException;
 
 class ResponsiveImg extends Component
 {
