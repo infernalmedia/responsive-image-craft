@@ -12,7 +12,7 @@ return [
     | These lines are setting the values of configuration options related to the source and target disks
     | and directories for the responsive images.
     */
-    'source_disk' => env('RESPONSIVE_IMAGES_SOURCE_DISK', 'local'),
+    'source_disk' => env('RESPONSIVE_IMAGES_SOURCE_DISK', 'public'),
     'target_disk' => env('RESPONSIVE_IMAGES_TARGET_DISK', 's3'),
     'source_directory' => env('RESPONSIVE_IMAGES_SOURCE_DIRECTORY', 'images'),
     'target_directory' => env('RESPONSIVE_IMAGES_TARGET_DIRECTORY', 'images'),

@@ -28,7 +28,7 @@ This is the contents of the published config file:
 ```php
 return [
     'use_responsive_images' => env('USE_RESPONSIVE_IMAGES', true),
-    'source_disk' => env('RESPONSIVE_IMAGES_SOURCE_DISK', 'local'),
+    'source_disk' => env('RESPONSIVE_IMAGES_SOURCE_DISK', 'public'),
     'target_disk' => env('RESPONSIVE_IMAGES_TARGET_DISK', 's3'),
     'source_directory' => env('RESPONSIVE_IMAGES_SOURCE_DIRECTORY', 'images'),
     'target_directory' => env('RESPONSIVE_IMAGES_TARGET_DIRECTORY', 'images'),
@@ -85,7 +85,7 @@ php artisan responsive-image-craft:generate
 Optionally you can define the source
 
 ```bash
-php artisan responsive-image-craft:generate --source-disk=local --relative-source-path=images
+php artisan responsive-image-craft:generate --source-disk=public --relative-source-path=images
 ```
 
 ### Responsive Image Component 
