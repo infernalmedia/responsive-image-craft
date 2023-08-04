@@ -118,7 +118,7 @@ class GenerateResponsiveImages extends Command
 
                 $this->storeFileToTarget($imageString, $tempFileName, $fileName);
                 $this->logGeneratedImages($imageString, $extension, $responsiveWidth);
-            } catch (CouldNotConvert|InvalidImageDriver|InvalidManipulation|InvalidTemporaryDirectory $e) {
+            } catch (CouldNotConvert | InvalidImageDriver | InvalidManipulation | InvalidTemporaryDirectory $e) {
                 $this->error($e->getMessage());
             } catch (Throwable $exception) {
                 $this->error($exception->getMessage());
@@ -181,7 +181,7 @@ class GenerateResponsiveImages extends Command
                 ->save($tempFileName);
             $this->storeFileToTarget($imageString, $tempFileName, $newFileName);
             $this->logGeneratedImages($imageString, $extension, $image->getWidth(), $newFileName);
-        } catch (CouldNotConvert|InvalidImageDriver|InvalidManipulation|InvalidTemporaryDirectory $e) {
+        } catch (CouldNotConvert | InvalidImageDriver | InvalidManipulation | InvalidTemporaryDirectory $e) {
             $this->logError($imageString, $e->getMessage());
             $this->error($e->getMessage());
         } catch (Throwable $exception) {
@@ -208,7 +208,8 @@ class GenerateResponsiveImages extends Command
             ->putFileAs(
                 $this->getTargetPath($imageString),
                 file: $tempFileName,
-                name: empty($newFileName) ? $imageString->getFilename() : $newFileName
+                name: empty($newFileName) ? $imageString->getFilename() : $newFileName,
+                options: 'public'
             );
     }
 
@@ -249,7 +250,7 @@ class GenerateResponsiveImages extends Command
      */
     private function logError(ImageInfoFromString $imageString, string $message): void
     {
-        if (! Arr::exists($this->logArray['errors'], $imageString->getRelativePathname())) {
+        if (!Arr::exists($this->logArray['errors'], $imageString->getRelativePathname())) {
             $this->logArray['errors'][$imageString->getRelativePathname()] = [];
         }
 
@@ -280,14 +281,14 @@ class GenerateResponsiveImages extends Command
         int $width,
         string $newFileName = ''
     ): void {
-        if (! Arr::exists($this->logArray['generated'], $imageString->getRelativePathname())) {
+        if (!Arr::exists($this->logArray['generated'], $imageString->getRelativePathname())) {
             $this->logArray['generated'][$imageString->getRelativePathname()] = [];
         }
-        if (! Arr::exists($this->logArray['generated'][$imageString->getRelativePathname()], $extension)) {
+        if (!Arr::exists($this->logArray['generated'][$imageString->getRelativePathname()], $extension)) {
             $this->logArray['generated'][$imageString->getRelativePathname()][$extension] = [];
         }
 
-        $filName = ! empty($newFileName) ?
+        $filName = !empty($newFileName) ?
             $newFileName
             : "{$this->getTargetFilePath($imageString)}{$this->getFilenameSpacer()}$width.$extension";
 
