@@ -76,7 +76,7 @@ class ResponsiveImg extends Component
     /**
      * The getImageType function returns the MIME type of an image based on its file extension.
      *
-     * @param string extension A string representing the file extension of an image file.
+     * @param string $extension A string representing the file extension of an image file.
      * @return string a string value. If the given extension exists in the `MIME_TYPES` array, it will
      * return the corresponding value from the array. Otherwise, it will return an empty string.
      */
@@ -93,7 +93,7 @@ class ResponsiveImg extends Component
      * The function `getSrcset` generates a string containing a list of image URLs and their corresponding
      * sizes in the specified extension for use in the `srcset` attribute of an HTML `<img>` or `<source>` tag.
      *
-     * @param string extension The parameter "extension" is a string that represents the file extension of
+     * @param string $extension The parameter "extension" is a string that represents the file extension of
      * the image. It is used to construct the image filenames in the srcset.
      * @return string a string that represents the srcset attribute value for an image.
      */
