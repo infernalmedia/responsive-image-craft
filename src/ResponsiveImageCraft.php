@@ -32,7 +32,7 @@ class ResponsiveImageCraft
                 $path = ltrim($path, '/');
             }
 
-            $baseUrl = config('filesystem.'.config('responsive-image-craft.source_disk').'.url');
+            $baseUrl = config('filesystems.disks.'.config('responsive-image-craft.source_disk').'.url');
 
             if (empty($baseUrl)) {
                 throw InvalidDiskException::urlIsMissing();
