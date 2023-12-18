@@ -274,6 +274,10 @@ class ResponsiveImg extends Component
             throw InvalidDiskException::urlIsMissing();
         }
 
+        if (empty($disk['url'])) {
+            throw InvalidDiskException::urlIsNotSet();
+        }
+
         return $disk['url'];
     }
 }

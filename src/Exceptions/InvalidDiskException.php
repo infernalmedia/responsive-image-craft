@@ -10,4 +10,9 @@ final class InvalidDiskException extends Exception
     {
         return new self('The selected disk does not have a defined url.');
     }
+
+    public static function urlIsNotSet(): self
+    {
+        return new self('The selected disk url is empty');
+    }
 }
