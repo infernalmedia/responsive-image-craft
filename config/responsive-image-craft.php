@@ -1,7 +1,5 @@
 <?php
 
-use Spatie\Image\Manipulations;
-
 return [
     /*
     | Display responsive images in srcset et css variables or display the original one
@@ -29,10 +27,10 @@ return [
     | @see Spatie\Image\Manipulation for available formats
     */
     'extensions' => [
-        Manipulations::FORMAT_JPG,
-        Manipulations::FORMAT_PNG,
-        Manipulations::FORMAT_AVIF,
-        Manipulations::FORMAT_WEBP,
+        'jpg',
+        'png',
+        'avif',
+        'webp',
     ],
 
     /*
@@ -40,10 +38,10 @@ return [
     | key-value pair in the array represents a format and its corresponding ignoring conversions.
     */
     'extensions_filters_rules' => [
-        Manipulations::FORMAT_JPG => [Manipulations::FORMAT_PNG],
-        Manipulations::FORMAT_PNG => [Manipulations::FORMAT_JPG],
-        Manipulations::FORMAT_WEBP => [],
-        Manipulations::FORMAT_AVIF => [],
+        'jpg' => ['png'],
+        'png' => ['jpg'],
+        'webp' => [],
+        'avif' => [],
     ],
 
     /*
@@ -73,11 +71,11 @@ return [
     | formats will be ignored.
     */
     'supported_file_extensions' => [
-        Manipulations::FORMAT_JPG,
-        Manipulations::FORMAT_WEBP,
-        Manipulations::FORMAT_PNG,
-        Manipulations::FORMAT_AVIF,
-        Manipulations::FORMAT_GIF,
+        'jpg',
+        'webp',
+        'png',
+        'avif',
+        'gif',
     ],
 
     /*
