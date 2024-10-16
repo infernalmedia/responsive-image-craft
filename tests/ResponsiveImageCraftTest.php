@@ -9,7 +9,7 @@ test('it throws an exception if URL is missing', function () {
     Config::set('responsive-image-craft.source_disk', 'local');
     Config::set('filesystems.disks.local.url', null);
 
-    $responsiveImageCraft = new ResponsiveImageCraft();
+    $responsiveImageCraft = new ResponsiveImageCraft;
 
     $maxWidth = 800;
     $extensions = ['jpg', 'webp'];

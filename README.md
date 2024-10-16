@@ -34,16 +34,16 @@ return [
     'target_directory' => env('RESPONSIVE_IMAGES_TARGET_DIRECTORY', 'images'),
     'sizes' => explode(',', env('RESPONSIVE_IMAGES_SIZES', "320,640,880,1024,1200,1760,2100")),
     'extensions' => [
-        Manipulations::FORMAT_JPG,
-        Manipulations::FORMAT_PNG,
-        Manipulations::FORMAT_AVIF,
-        Manipulations::FORMAT_WEBP,
+        "jpg",
+        "png",
+        "avif",
+        "webp",
     ],
     'extensions_filters_rules' => [
-        Manipulations::FORMAT_JPG => [Manipulations::FORMAT_PNG],
-        Manipulations::FORMAT_PNG => [Manipulations::FORMAT_JPG],
-        Manipulations::FORMAT_WEBP => [],
-        Manipulations::FORMAT_AVIF => [],
+        "jpg" => ["png"],
+        "png" => ["jpg"],
+        "webp" => [],
+        "avif" => [],
     ],
     'extensions_to_ignore' => [
         'svg'
@@ -52,13 +52,13 @@ return [
         'favicon'
     ],
     'supported_file_extensions' => [
-        Manipulations::FORMAT_JPG,
-        Manipulations::FORMAT_WEBP,
-        Manipulations::FORMAT_PNG,
-        Manipulations::FORMAT_AVIF,
-        Manipulations::FORMAT_GIF,
-        Manipulations::FORMAT_TIFF,
-        Manipulations::FORMAT_PJPG
+        "jpg",
+        "webp",
+        "png",
+        "avif",
+        "gif",
+        "tiff",
+        "pjpg"
     ],
     'filename_spacer' => '@',
     'container_css_class_name' => 'img-container'

@@ -12,14 +12,13 @@ use Illuminate\Support\Str;
  * path, file name, file extension, and more. It also includes methods to check if the file is a
  * supported image file and if it meets certain criteria, such as accepted extensions and file names.
  *
- * @param  string  $file The `file` parameter is the string path to the file
+ * @param  string  $file  The `file` parameter is the string path to the file
  */
 class ImageInfoFromString
 {
     public function __construct(
         private string $file
-    ) {
-    }
+    ) {}
 
     /**
      * The function returns the absolute path name of the file using the Laravel Storage facade.
@@ -125,8 +124,8 @@ class ImageInfoFromString
     /**
      * The function `getFilteredSizes` filters an array of sizes based on a maximum image width.
      *
-     * @param  int  $imagMaxWidth The `imagMaxWidth` parameter is an integer representing the maximum width of
-     * an image.
+     * @param  int  $imagMaxWidth  The `imagMaxWidth` parameter is an integer representing the maximum width of
+     *                             an image.
      * @return array An array of sizes that are less than or equal to the given ``.
      */
     public function getFilteredSizes(int $imagMaxWidth): array

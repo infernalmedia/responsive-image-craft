@@ -76,9 +76,9 @@ class ResponsiveImg extends Component
     /**
      * The getImageType function returns the MIME type of an image based on its file extension.
      *
-     * @param  string  $extension A string representing the file extension of an image file.
+     * @param  string  $extension  A string representing the file extension of an image file.
      * @return string a string value. If the given extension exists in the `MIME_TYPES` array, it will
-     * return the corresponding value from the array. Otherwise, it will return an empty string.
+     *                return the corresponding value from the array. Otherwise, it will return an empty string.
      */
     public function getImageType(string $extension): string
     {
@@ -93,8 +93,8 @@ class ResponsiveImg extends Component
      * The function `getSrcset` generates a string containing a list of image URLs and their corresponding
      * sizes in the specified extension for use in the `srcset` attribute of an HTML `<img>` or `<source>` tag.
      *
-     * @param  string  $extension The parameter "extension" is a string that represents the file extension of
-     * the image. It is used to construct the image filenames in the srcset.
+     * @param  string  $extension  The parameter "extension" is a string that represents the file extension of
+     *                             the image. It is used to construct the image filenames in the srcset.
      * @return string a string that represents the srcset attribute value for an image.
      */
     public function getSrcset(string $extension): string
@@ -142,7 +142,7 @@ class ResponsiveImg extends Component
      * @see https://developer.mozilla.org/docs/Web/API/HTMLImageElement/loading
      *
      * @return string The method is returning a string value. If the `lazy` property is true, it will
-     * return the string 'lazy'. Otherwise, it will return the string 'eager'.
+     *                return the string 'lazy'. Otherwise, it will return the string 'eager'.
      */
     public function getLoading(): string
     {
@@ -155,7 +155,7 @@ class ResponsiveImg extends Component
      * @see https://developer.mozilla.org/docs/Web/API/HTMLImageElement/decoding
      *
      * @return string The method is returning a string value. If the value of the property `asyncDecoding`
-     * is true, then the string 'async' is returned. Otherwise, the string 'auto' is returned.
+     *                is true, then the string 'async' is returned. Otherwise, the string 'auto' is returned.
      */
     public function getDecoding(): string
     {
@@ -167,7 +167,7 @@ class ResponsiveImg extends Component
      * attribute is empty.
      *
      * @return string a string value. If the `` property is empty, it will return the value of
-     * `config('app.name')`, otherwise it will return the value of `->alt`.
+     *                `config('app.name')`, otherwise it will return the value of `->alt`.
      */
     public function getAltAttribute(): string
     {
@@ -235,7 +235,7 @@ class ResponsiveImg extends Component
      * value if it is not empty.
      *
      * @return int the value of `->width` if it is not empty. Otherwise, it returns the highest value
-     * from the available image size.
+     *             from the available image size.
      */
     private function getWidth(): int
     {
@@ -260,7 +260,7 @@ class ResponsiveImg extends Component
      * The function returns the URL base path to image following the `useResponsiveImages` value.
      *
      * @return string the value of the 'url' key in the disk configuration in the 'filesystems'
-     * configuration file.
+     *                configuration file.
      */
     public function getUrlBasePath(): string
     {
