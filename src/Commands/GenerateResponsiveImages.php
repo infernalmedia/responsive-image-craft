@@ -8,10 +8,9 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Infernalmedia\ResponsiveImageCraft\ImageInfoFromString;
-use Spatie\Image\Exceptions\CouldNotConvert;
+use Spatie\Image\Exceptions\CouldNotLoadImage;
 use Spatie\Image\Exceptions\InvalidImageDriver;
 use Spatie\Image\Exceptions\InvalidManipulation;
-use Spatie\Image\Exceptions\InvalidTemporaryDirectory;
 use Spatie\Image\Image;
 use Spatie\ImageOptimizer\OptimizerChainFactory;
 use Spatie\TemporaryDirectory\TemporaryDirectory;
@@ -119,7 +118,7 @@ class GenerateResponsiveImages extends Command
 
                 $this->storeFileToTarget($imageString, $tempFileName, $fileName);
                 $this->logGeneratedImages($imageString, $extension, $responsiveWidth);
-            } catch (CouldNotConvert|InvalidImageDriver|InvalidManipulation|InvalidTemporaryDirectory $e) {
+            } catch (CouldNotLoadImage|InvalidImageDriver|InvalidManipulation $e) {
                 $this->error($e->getMessage());
             } catch (Throwable $exception) {
                 $this->error($exception->getMessage());
@@ -182,7 +181,7 @@ class GenerateResponsiveImages extends Command
                 ->save($tempFileName);
             $this->storeFileToTarget($imageString, $tempFileName, $newFileName);
             $this->logGeneratedImages($imageString, $extension, $image->getWidth(), $newFileName);
-        } catch (CouldNotConvert|InvalidImageDriver|InvalidManipulation|InvalidTemporaryDirectory $e) {
+        } catch (CouldNotLoadImage|InvalidImageDriver|InvalidManipulation $e) {
             $this->logError($imageString, $e->getMessage());
             $this->error($e->getMessage());
         } catch (Throwable $exception) {
