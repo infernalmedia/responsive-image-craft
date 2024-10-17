@@ -76,6 +76,7 @@ class GenerateResponsiveImages extends Command
         $this->optimizeOriginalImage($imageString, $image->getWidth());
 
         foreach ($imageString->getFilteredExtensions() as $extension) {
+            $image = Image::load($imageString->getAbsolutePathname());
             $this->optimizeOriginalImageToSpecificExtension(
                 $image,
                 $imageString,
@@ -110,10 +111,11 @@ class GenerateResponsiveImages extends Command
                 $fileName = "{$imageString->getFilenameWithoutExtension()}{$this->getFilenameSpacer()}$responsiveWidth.$extension";
                 $tempFileName = "{$this->temporaryDirectory->path()}/{$fileName}";
 
-                $image
+                $imageToResize = Image::load($imageString->getAbsolutePathname());
+                $imageToResize
                     ->format($extension)
-                    ->optimize()
                     ->width($responsiveWidth)
+                    ->optimize()
                     ->save($tempFileName);
 
                 $this->storeFileToTarget($imageString, $tempFileName, $fileName);
