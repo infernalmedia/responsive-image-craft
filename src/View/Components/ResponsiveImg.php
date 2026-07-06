@@ -31,7 +31,8 @@ class ResponsiveImg extends Component
         private bool $asyncDecoding = true,
         public bool $skipPictureTag = false,
         private string $containerClass = '',
-        public string $imgAttributes = ''
+        public string $imgAttributes = '',
+        public ?string $sizes = null,
     ) {
         //
     }
@@ -264,10 +265,10 @@ class ResponsiveImg extends Component
      */
     public function getUrlBasePath(): string
     {
-        $disk = config('filesystems.disks.'.config('responsive-image-craft.source_disk'));
+        $disk = config('filesystems.disks.' . config('responsive-image-craft.source_disk'));
 
         if ($this->useResponsiveImages()) {
-            $disk = config('filesystems.disks.'.config('responsive-image-craft.target_disk'));
+            $disk = config('filesystems.disks.' . config('responsive-image-craft.target_disk'));
         }
 
         if (! Arr::exists($disk, 'url')) {
