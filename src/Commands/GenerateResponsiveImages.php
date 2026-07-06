@@ -107,7 +107,7 @@ class GenerateResponsiveImages extends Command
     {
         foreach ($imageString->getFilteredSizes($image->getWidth()) as $responsiveWidth) {
             try {
-                //phpcs:ignore
+                // phpcs:ignore
                 $fileName = "{$imageString->getFilenameWithoutExtension()}{$this->getFilenameSpacer()}$responsiveWidth.$extension";
                 $tempFileName = "{$this->temporaryDirectory->path()}/{$fileName}";
 

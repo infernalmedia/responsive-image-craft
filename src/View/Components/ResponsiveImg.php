@@ -31,7 +31,8 @@ class ResponsiveImg extends Component
         private bool $asyncDecoding = true,
         public bool $skipPictureTag = false,
         private string $containerClass = '',
-        public string $imgAttributes = ''
+        public string $imgAttributes = '',
+        public ?string $sizes = null,
     ) {
         //
     }
