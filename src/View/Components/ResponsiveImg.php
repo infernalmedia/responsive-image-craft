@@ -265,10 +265,10 @@ class ResponsiveImg extends Component
      */
     public function getUrlBasePath(): string
     {
-        $disk = config('filesystems.disks.' . config('responsive-image-craft.source_disk'));
+        $disk = config('filesystems.disks.'.config('responsive-image-craft.source_disk'));
 
         if ($this->useResponsiveImages()) {
-            $disk = config('filesystems.disks.' . config('responsive-image-craft.target_disk'));
+            $disk = config('filesystems.disks.'.config('responsive-image-craft.target_disk'));
         }
 
         if (! Arr::exists($disk, 'url')) {
