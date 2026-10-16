@@ -49,7 +49,7 @@ jobs:
         run: composer show -D
 
       - name: Execute tests
-        run: vendor/bin/pest --ci
+        run: vendor/bin/pest --no-coverage
 
   coverage:
     runs-on: ubuntu-latest

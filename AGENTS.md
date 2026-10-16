@@ -52,7 +52,7 @@ There is no frontend build step: `resources/js` and `resources/scss` are publish
 
 ## CI (GitHub Actions)
 
-- `run-tests.yml`: Pest on ubuntu + windows, PHP 8.4/8.5 × Laravel 12/13, prefer-lowest/prefer-stable
+- `run-tests.yml`: Pest on ubuntu, PHP 8.4/8.5 × Laravel 12/13, prefer-lowest/prefer-stable, plus a dedicated coverage job (pcov → Codecov). The test job runs `pest --no-coverage` since the runners have no coverage driver.
 - `phpstan.yml`: static analysis
 - `fix-php-code-style-issues.yml`: runs Pint and auto-commits fixes
 - `update-changelog.yml`, `dependabot-auto-merge.yml`: release/dependency automation
