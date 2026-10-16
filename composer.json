@@ -17,6 +17,7 @@
     ],
     "require": {
         "php": "^8.4",
+        "laravel/prompts": "^0.3.25",
         "spatie/image": "^3.7",
         "spatie/image-optimizer": "^1.7",
         "spatie/laravel-package-tools": "^1.16.0",

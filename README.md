@@ -107,6 +107,8 @@ The source disk may be remote (S3, FTP…): files are streamed to a temporary di
 | `--dry-run`                  | List what would be generated, write nothing               |
 | `--queue`                    | Dispatch one `GenerateResponsiveImageJob` per image       |
 
+Run the command in an interactive terminal without options and it asks for the missing values: run mode (process now / dry run / queue), source disk, scope (whole directory or a single file), directory, widths, output formats and whether to regenerate existing variants. Any option passed on the command line is not asked again — and `--no-interaction` disables prompting entirely (CI, scripts).
+
 Already-generated images are **skipped** on incremental runs (unless `--force`), and a summary is always written to `images-log.json` on the target disk:
 
 ```json
@@ -129,6 +131,8 @@ Already-generated images are **skipped** on incremental runs (unless `--force`),
 php artisan responsive-image-craft:clean        # delete variants whose source is gone
 php artisan responsive-image-craft:clean --dry-run
 ```
+
+Interactively, it asks for the source/target disks and directory, lists the stale files and asks for confirmation before deleting anything.
 
 ### Events
 

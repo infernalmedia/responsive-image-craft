@@ -37,9 +37,9 @@ The package has three pillars: **generation** (Artisan command + `ImageProcessor
 
 ## 1. Generation — `responsive-image-craft:generate`
 
-`src/Commands/GenerateResponsiveImages.php` orchestrates; `Support/ImageProcessor` does the work:
+`src/Commands/GenerateResponsiveImages.php` orchestrates; `Support/ImageProcessor` does the work. When run interactively, missing values are asked through Laravel Prompts (`select`/`text`/`confirm`) — every option still overrides its prompt, and `--no-interaction` disables prompting:
 
-1. Build a `GenerationOptions` from `PackageConfig`, then apply CLI overrides (`--sizes`, `--extensions`, `--force`, `--dry-run`, `--queue`, `--path`, `--relative-source-path`). `--source-disk` overrides the disk used for **both** listing and reading.
+1. Build a `GenerationOptions` from `PackageConfig`, then apply CLI overrides or interactive answers (`--sizes`, `--extensions`, `--force`, `--dry-run`, `--queue`, `--path`, `--relative-source-path`). `--source-disk` overrides the disk used for **both** listing and reading.
 2. List files on the resolved source disk (`allFiles`, or the single `--path`), wrap each in `ImageInfoFromString` and keep only supported files:
     - extension is in `input_formats`
     - extension is not in `ignored_extensions`

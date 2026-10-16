@@ -165,7 +165,9 @@ it('renders without the picture tag when skipped', function () {
     Storage::fake('public');
     $this->seedFixtureImage();
 
-    $html = Blade::render('<x-infernal-responsive-img src="images/photo.jpg" :skip-picture-tag="true" class="extra" />');
+    $html = Blade::render(
+        '<x-infernal-responsive-img src="images/photo.jpg" :skip-picture-tag="true" class="extra" />'
+    );
 
     expect($html)
         ->not->toContain('<picture')

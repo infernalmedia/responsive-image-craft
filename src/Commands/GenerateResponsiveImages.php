@@ -2,6 +2,7 @@
 
 namespace Infernalmedia\ResponsiveImageCraft\Commands;
 
+use Closure;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -10,10 +11,15 @@ use Illuminate\Support\Facades\Storage;
 use Infernalmedia\ResponsiveImageCraft\Events\ResponsiveImageGenerationFailed;
 use Infernalmedia\ResponsiveImageCraft\ImageInfoFromString;
 use Infernalmedia\ResponsiveImageCraft\Jobs\GenerateResponsiveImageJob;
+use Infernalmedia\ResponsiveImageCraft\Support\Disks;
 use Infernalmedia\ResponsiveImageCraft\Support\GenerationOptions;
 use Infernalmedia\ResponsiveImageCraft\Support\ImageProcessor;
 use Spatie\TemporaryDirectory\TemporaryDirectory;
 use Throwable;
+
+use function Laravel\Prompts\confirm;
+use function Laravel\Prompts\select;
+use function Laravel\Prompts\text;
 
 final class GenerateResponsiveImages extends Command
 {
@@ -31,6 +37,18 @@ final class GenerateResponsiveImages extends Command
 
     protected $aliases = ['images:craft'];
 
+    private const string MODE_PROCESS = 'process';
+
+    private const string MODE_DRY_RUN = 'dry-run';
+
+    private const string MODE_QUEUE = 'queue';
+
+    private string $mode = self::MODE_PROCESS;
+
+    private ?string $queueName = null;
+
+    private ?string $singlePath = null;
+
     private int $generatedImages = 0;
 
     private int $treatedImages = 0;
@@ -40,7 +58,11 @@ final class GenerateResponsiveImages extends Command
     private int $imagesInError = 0;
 
     /**
-     * @var array{generated_on: string|null, generated: array<string, array<string, string[]>>, errors: array<string, string[]>}
+     * @var array{
+     *     generated_on: string|null,
+     *     generated: array<string, array<string, string[]>>,
+     *     errors: array<string, string[]>
+     * }
      */
     private array $logArray = [
         'generated_on' => null,
@@ -50,7 +72,8 @@ final class GenerateResponsiveImages extends Command
 
     public function handle(): int
     {
-        $options = $this->buildOptions();
+        $this->resolveMode();
+        $options = $this->resolveOptions();
         $images = $this->collectImages($options);
 
         if ($images->isEmpty()) {
@@ -59,15 +82,11 @@ final class GenerateResponsiveImages extends Command
             return self::SUCCESS;
         }
 
-        if ($this->option('dry-run')) {
-            return $this->dryRun($images, $options);
-        }
-
-        if ($queue = $this->stringOption('queue')) {
-            return $this->dispatchJobs($images, $options, $queue);
-        }
-
-        return $this->process($images, $options);
+        return match ($this->mode) {
+            self::MODE_DRY_RUN => $this->dryRun($images, $options),
+            self::MODE_QUEUE => $this->dispatchJobs($images, $options, $this->queueName ?? 'default'),
+            default => $this->process($images, $options),
+        };
     }
 
     /**
@@ -80,27 +99,16 @@ final class GenerateResponsiveImages extends Command
         $temporaryDirectory = (new TemporaryDirectory)->create();
 
         try {
-            $this->withProgressBar($images, function (ImageInfoFromString $image) use ($processor, $options, $existingTargets, $temporaryDirectory) {
-                if (! $options->force && $this->isFullyGenerated($processor, $image, $existingTargets)) {
-                    $this->skippedImages++;
-
-                    return;
-                }
-
-                try {
-                    $generated = $processor->process($image, $temporaryDirectory);
-                    $temporaryDirectory->empty();
-                } catch (Throwable $exception) {
-                    $this->logError($image, $exception->getMessage());
-                    ResponsiveImageGenerationFailed::dispatch($image->getRelativePathname(), $exception->getMessage());
-                    $this->error($exception->getMessage());
-
-                    return;
-                }
-
-                $this->logGenerated($image, $generated);
-                $this->treatedImages++;
-            });
+            $this->withProgressBar(
+                $images,
+                fn (ImageInfoFromString $image) => $this->processImage(
+                    $image,
+                    $processor,
+                    $options,
+                    $existingTargets,
+                    $temporaryDirectory
+                )
+            );
         } finally {
             $temporaryDirectory->delete();
         }
@@ -108,7 +116,10 @@ final class GenerateResponsiveImages extends Command
         $this->storeLogToJsonFile($options);
 
         $this->newLine(3);
-        $this->info("{$this->generatedImages} responsive images generated successfully from {$this->treatedImages} images!");
+        $this->info(
+            "{$this->generatedImages} responsive images generated successfully ".
+                "from {$this->treatedImages} images!"
+        );
 
         if ($this->skippedImages > 0) {
             $this->info("{$this->skippedImages} images skipped (already generated — use --force to regenerate).");
@@ -119,6 +130,37 @@ final class GenerateResponsiveImages extends Command
         }
 
         return $this->imagesInError > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * @param  array<string, true>  $existingTargets
+     */
+    private function processImage(
+        ImageInfoFromString $image,
+        ImageProcessor $processor,
+        GenerationOptions $options,
+        array $existingTargets,
+        TemporaryDirectory $temporaryDirectory
+    ): void {
+        if (! $options->force && $this->isFullyGenerated($processor, $image, $existingTargets)) {
+            $this->skippedImages++;
+
+            return;
+        }
+
+        try {
+            $generated = $processor->process($image, $temporaryDirectory);
+            $temporaryDirectory->empty();
+        } catch (Throwable $exception) {
+            $this->logError($image, $exception->getMessage());
+            ResponsiveImageGenerationFailed::dispatch($image->getRelativePathname(), $exception->getMessage());
+            $this->error($exception->getMessage());
+
+            return;
+        }
+
+        $this->logGenerated($image, $generated);
+        $this->treatedImages++;
     }
 
     /**
@@ -160,50 +202,186 @@ final class GenerateResponsiveImages extends Command
         return self::SUCCESS;
     }
 
-    private function buildOptions(): GenerationOptions
+    /**
+     * Resolve the run mode from the options, asking interactively when
+     * neither --dry-run nor --queue was given.
+     */
+    private function resolveMode(): void
+    {
+        if ((bool) $this->option('dry-run')) {
+            $this->mode = self::MODE_DRY_RUN;
+
+            return;
+        }
+
+        if ($queue = $this->stringOption('queue')) {
+            $this->mode = self::MODE_QUEUE;
+            $this->queueName = $queue;
+
+            return;
+        }
+
+        $mode = $this->prompted(fn () => select(
+            label: 'How should the images be processed?',
+            options: [
+                self::MODE_PROCESS => 'Process them now',
+                self::MODE_DRY_RUN => 'Dry run — list the files that would be generated',
+                self::MODE_QUEUE => 'Dispatch one job per image to a queue',
+            ],
+            default: self::MODE_PROCESS,
+        ));
+
+        if ($mode === self::MODE_DRY_RUN || $mode === self::MODE_QUEUE) {
+            $this->mode = $mode;
+        }
+
+        if ($this->mode === self::MODE_QUEUE) {
+            $queueName = $this->prompted(fn () => text(
+                label: 'Which queue should the jobs run on?',
+                default: 'default',
+                required: true,
+            ));
+
+            if (is_string($queueName) && $queueName !== '') {
+                $this->queueName = $queueName;
+            }
+        }
+    }
+
+    private function resolveOptions(): GenerationOptions
     {
         $options = GenerationOptions::fromConfig();
 
+        $sourceDisk = $this->resolveSourceDisk($options);
+        $this->singlePath = $this->resolvePath();
+        $sourceDirectory = $this->resolveSourceDirectory($options);
+
         return new GenerationOptions(
-            sourceDisk: $this->stringOption('source-disk') ?? $options->sourceDisk,
-            sourceDirectory: $this->stringOption('relative-source-path') ?? $options->sourceDirectory,
+            sourceDisk: $sourceDisk,
+            sourceDirectory: $sourceDirectory,
             targetDisk: $options->targetDisk,
             targetDirectory: $options->targetDirectory,
-            sizes: $this->sizesOverride() ?? $options->sizes,
-            extensions: $this->extensionsOverride() ?? $options->extensions,
+            sizes: $this->resolveSizes($options),
+            extensions: $this->resolveExtensions($options),
             quality: $options->quality,
             optimize: $options->optimize,
-            force: (bool) $this->option('force'),
+            force: $this->resolveForce(),
             filenameSpacer: $options->filenameSpacer,
         );
     }
 
-    /**
-     * @return int[]|null
-     */
-    private function sizesOverride(): ?array
+    private function resolveSourceDisk(GenerationOptions $options): string
     {
-        $sizes = $this->stringOption('sizes');
+        $disk = $this->stringOption('source-disk') ?? $this->prompted(fn () => select(
+            label: 'Which disk contains the source images?',
+            options: Disks::all($options->sourceDisk),
+            default: $options->sourceDisk,
+        ));
 
-        if ($sizes === null) {
+        return is_string($disk) && $disk !== '' ? $disk : $options->sourceDisk;
+    }
+
+    private function resolvePath(): ?string
+    {
+        if ($path = $this->stringOption('path')) {
+            return $path;
+        }
+
+        if ($this->stringOption('relative-source-path') !== null) {
             return null;
         }
 
-        return array_map('intval', explode(',', $sizes));
+        return $this->prompted(function () {
+            $scope = select(
+                label: 'What should be generated?',
+                options: [
+                    'directory' => 'Every supported image in a directory',
+                    'file' => 'A single file',
+                ],
+                default: 'directory',
+            );
+
+            if ($scope !== 'file') {
+                return null;
+            }
+
+            $path = text(
+                label: 'Path to the image on the source disk',
+                placeholder: 'images/photo.jpg',
+                required: true,
+            );
+
+            return $path === '' ? null : $path;
+        });
+    }
+
+    private function resolveSourceDirectory(GenerationOptions $options): string
+    {
+        $directory = $this->stringOption('relative-source-path');
+
+        if ($directory === null && $this->singlePath === null) {
+            $directory = $this->prompted(fn () => text(
+                label: 'Which directory on the source disk should be scanned?',
+                default: $options->sourceDirectory,
+            ));
+        }
+
+        return is_string($directory) && $directory !== '' ? $directory : $options->sourceDirectory;
     }
 
     /**
-     * @return string[]|null
+     * @return int[]
      */
-    private function extensionsOverride(): ?array
+    private function resolveSizes(GenerationOptions $options): array
     {
-        $extensions = $this->stringOption('extensions');
+        $sizes = $this->stringOption('sizes') ?? $this->prompted(fn () => text(
+            label: 'Widths to generate, comma-separated',
+            default: implode(',', $options->sizes),
+        ));
 
-        if ($extensions === null) {
-            return null;
+        return is_string($sizes) && $sizes !== ''
+            ? array_map('intval', explode(',', $sizes))
+            : $options->sizes;
+    }
+
+    /**
+     * @return string[]
+     */
+    private function resolveExtensions(GenerationOptions $options): array
+    {
+        $extensions = $this->stringOption('extensions') ?? $this->prompted(fn () => text(
+            label: 'Output formats to generate, comma-separated',
+            default: implode(',', $options->extensions),
+        ));
+
+        return is_string($extensions) && $extensions !== ''
+            ? array_map('strtolower', array_map('trim', explode(',', $extensions)))
+            : $options->extensions;
+    }
+
+    private function resolveForce(): bool
+    {
+        if ((bool) $this->option('force') || $this->mode === self::MODE_DRY_RUN) {
+            return (bool) $this->option('force');
         }
 
-        return array_map('strtolower', array_map('trim', explode(',', $extensions)));
+        return $this->prompted(fn () => confirm(
+            label: 'Regenerate variants that already exist on the target disk?',
+            default: false,
+        )) === true;
+    }
+
+    /**
+     * Run the given prompt only when the console is interactive.
+     *
+     * @template TValue
+     *
+     * @param  Closure(): TValue  $prompt
+     * @return TValue|null
+     */
+    private function prompted(Closure $prompt): mixed
+    {
+        return $this->input->isInteractive() ? $prompt() : null;
     }
 
     private function stringOption(string $name): ?string
@@ -218,12 +396,10 @@ final class GenerateResponsiveImages extends Command
      */
     private function collectImages(GenerationOptions $options): Collection
     {
-        $path = $this->stringOption('path');
-
         /** @var string[] $files */
-        $files = $path === null
+        $files = $this->singlePath === null
             ? Storage::disk($options->sourceDisk)->allFiles($options->sourceDirectory)
-            : [$path];
+            : [$this->singlePath];
 
         return collect($files)
             ->map(fn (string $file) => new ImageInfoFromString($file, $options->sourceDisk))
@@ -248,13 +424,11 @@ final class GenerateResponsiveImages extends Command
 
     private function targetListingRoot(GenerationOptions $options): string
     {
-        $path = $this->stringOption('path');
-
-        if ($path === null) {
+        if ($this->singlePath === null) {
             return $options->sourceDirectory;
         }
 
-        $directory = pathinfo($path, PATHINFO_DIRNAME);
+        $directory = pathinfo($this->singlePath, PATHINFO_DIRNAME);
 
         return $directory === '.' ? '' : $directory;
     }
