@@ -1,0 +1,34 @@
+# Responsive Image Craft
+
+> Responsive Image Craft is a Laravel package that generates responsive image variants (multiple sizes and formats) via an Artisan command, and ships a Blade component, a CSS-variables facade, and SCSS mixins to display them.
+
+Source images are read from a configurable filesystem disk, optimized, converted and resized into `filename@{width}.{ext}` variants written to a target disk. Views render `<picture>` markup with `srcset`/`sizes`, and SCSS mixins turn generated CSS variables into responsive `background-image`/`image-set()` rules.
+
+## Docs
+
+- [README](README.md): installation, configuration and usage guide
+- [ARCHITECTURE](ARCHITECTURE.md): internals, pipeline and data flow
+- [CHANGELOG](CHANGELOG.md): release history
+- [AGENTS](AGENTS.md): conventions and commands for coding agents
+- [Configuration](config/responsive-image-craft.php): every package option with env fallbacks
+
+## Source
+
+- [ResponsiveImageCraftServiceProvider](src/ResponsiveImageCraftServiceProvider.php): package wiring via spatie/laravel-package-tools, asset publishing, `infernal` component prefix, install command
+- [GenerateResponsiveImages](src/Commands/GenerateResponsiveImages.php): `responsive-image-craft:generate` Artisan command (scan, filter, optimize, resize, store, JSON log)
+- [ResponsiveImageCraft](src/ResponsiveImageCraft.php): core class exposing `getCssVariables()`
+- [ImageInfoFromString](src/ImageInfoFromString.php): image path parsing plus extension/size/filename filtering rules
+- [ResponsiveImg](src/View/Components/ResponsiveImg.php): Blade component class building `srcset`, mime types, lazy/decoding attributes
+- [ResponsiveImageCraft facade](src/Facades/ResponsiveImageCraft.php): facade accessor for the core class
+- [InvalidDiskException](src/Exceptions/InvalidDiskException.php): thrown when a configured disk has no usable `url`
+
+## Resources
+
+- [responsive-img.blade.php](resources/views/components/responsive-img.blade.php): `<picture>`/`<source>`/`<img>` template
+- [_responsive-background-images.scss](resources/scss/_responsive-background-images.scss): `media-query`, `responsive-background-image`, `responsive-background-image-from-existing-css-var` mixins
+- [_assets-url-helper.scss](resources/scss/_assets-url-helper.scss): URL, mime-type and `image-set()` builder functions
+- [AssetsScssFile.js](resources/js/AssetsScssFile.js): writes `_assets.scss` variables from Vite env at build time
+
+## Tests
+
+- [tests](tests): Pest 2 suite on Orchestra Testbench, including an architecture test
