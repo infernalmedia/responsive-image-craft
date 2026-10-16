@@ -2,363 +2,495 @@
 
 namespace Infernalmedia\ResponsiveImageCraft\Commands;
 
+use Closure;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Infernalmedia\ResponsiveImageCraft\Events\ResponsiveImageGenerationFailed;
 use Infernalmedia\ResponsiveImageCraft\ImageInfoFromString;
-use Spatie\Image\Exceptions\CouldNotLoadImage;
-use Spatie\Image\Exceptions\InvalidImageDriver;
-use Spatie\Image\Exceptions\InvalidManipulation;
-use Spatie\Image\Image;
-use Spatie\ImageOptimizer\OptimizerChainFactory;
+use Infernalmedia\ResponsiveImageCraft\Jobs\GenerateResponsiveImageJob;
+use Infernalmedia\ResponsiveImageCraft\Support\Disks;
+use Infernalmedia\ResponsiveImageCraft\Support\GenerationOptions;
+use Infernalmedia\ResponsiveImageCraft\Support\ImageProcessor;
 use Spatie\TemporaryDirectory\TemporaryDirectory;
 use Throwable;
 
-class GenerateResponsiveImages extends Command
+use function Laravel\Prompts\confirm;
+use function Laravel\Prompts\select;
+use function Laravel\Prompts\text;
+
+final class GenerateResponsiveImages extends Command
 {
-    protected $signature = 'responsive-image-craft:generate {--source-disk=} {--relative-source-path=}';
+    protected $signature = 'responsive-image-craft:generate
+        {--source-disk= : Disk to scan for source images}
+        {--relative-source-path= : Directory to scan on the source disk}
+        {--path= : Process a single file instead of scanning a directory}
+        {--force : Regenerate variants that already exist on the target disk}
+        {--sizes= : Comma-separated widths overriding the configured sizes}
+        {--extensions= : Comma-separated formats overriding the configured output formats}
+        {--queue= : Dispatch each image to the given queue instead of processing inline}
+        {--dry-run : List the files that would be generated without writing anything}';
 
     protected $description = 'Generate responsive images';
+
+    protected $aliases = ['images:craft'];
+
+    private const string MODE_PROCESS = 'process';
+
+    private const string MODE_DRY_RUN = 'dry-run';
+
+    private const string MODE_QUEUE = 'queue';
+
+    private string $mode = self::MODE_PROCESS;
+
+    private ?string $queueName = null;
+
+    private ?string $singlePath = null;
 
     private int $generatedImages = 0;
 
     private int $treatedImages = 0;
 
+    private int $skippedImages = 0;
+
     private int $imagesInError = 0;
 
-    private ?TemporaryDirectory $temporaryDirectory = null;
-
+    /**
+     * @var array{
+     *     generated_on: string|null,
+     *     generated: array<string, array<string, string[]>>,
+     *     errors: array<string, string[]>
+     * }
+     */
     private array $logArray = [
         'generated_on' => null,
         'generated' => [],
         'errors' => [],
     ];
 
-    public function handle()
+    public function handle(): int
     {
-        try {
-            $this->generateResponsiveImages();
-            $this->storeLogToJsonFile();
-            $this->newLine(3);
-            $this->info("$this->generatedImages responsive images generated successfully from $this->treatedImages!");
+        $this->resolveMode();
+        $options = $this->resolveOptions();
+        $images = $this->collectImages($options);
 
-            return Command::SUCCESS;
-        } catch (Throwable $exception) {
-            $this->newLine();
-            $this->warn("$this->generatedImages responsive images generated successfully from $this->treatedImages!");
-            $this->warn("$this->imagesInError images has error!");
-            $this->error($exception->getMessage());
+        if ($images->isEmpty()) {
+            $this->warn('No supported image found.');
 
-            return Command::FAILURE;
+            return self::SUCCESS;
         }
-    }
 
-    private function generateResponsiveImages(): void
-    {
-        $this->withProgressBar($this->getFilteredImages(), function (ImageInfoFromString $imageString) {
-            $this->generateAndSaveResponsiveImages($imageString);
-        });
+        return match ($this->mode) {
+            self::MODE_DRY_RUN => $this->dryRun($images, $options),
+            self::MODE_QUEUE => $this->dispatchJobs($images, $options, $this->queueName ?? 'default'),
+            default => $this->process($images, $options),
+        };
     }
 
     /**
-     * The function generates and saves responsive images in different sizes and formats.
-     *
-     * @param  ImageInfoFromString  $imageString  An instance of the class `ImageInfoFromString`, which
-     *                                            contains information about the image file, such as its absolute pathname and filtered extensions.
+     * @param  Collection<int, ImageInfoFromString>  $images
      */
-    private function generateAndSaveResponsiveImages(ImageInfoFromString $imageString): void
+    private function process(Collection $images, GenerationOptions $options): int
     {
-        $this->temporaryDirectory = (new TemporaryDirectory)->create();
+        $processor = new ImageProcessor($options);
+        $existingTargets = $this->existingTargetFiles($options);
+        $temporaryDirectory = (new TemporaryDirectory)->create();
 
-        $image = Image::load($imageString->getAbsolutePathname());
-        $this->optimizeOriginalImage($imageString, $image->getWidth());
-
-        foreach ($imageString->getFilteredExtensions() as $extension) {
-            $image = Image::load($imageString->getAbsolutePathname());
-            $this->optimizeOriginalImageToSpecificExtension(
-                $image,
-                $imageString,
-                $extension
+        try {
+            $this->withProgressBar(
+                $images,
+                fn (ImageInfoFromString $image) => $this->processImage(
+                    $image,
+                    $processor,
+                    $options,
+                    $existingTargets,
+                    $temporaryDirectory
+                )
             );
-
-            $this->saveImageToSpecifiedSizes($image, $imageString, $extension);
+        } finally {
+            $temporaryDirectory->delete();
         }
 
-        $this->temporaryDirectory->empty();
-        $this->temporaryDirectory->delete();
+        $this->storeLogToJsonFile($options);
 
+        $this->newLine(3);
+        $this->info(
+            "{$this->generatedImages} responsive images generated successfully ".
+                "from {$this->treatedImages} images!"
+        );
+
+        if ($this->skippedImages > 0) {
+            $this->info("{$this->skippedImages} images skipped (already generated — use --force to regenerate).");
+        }
+
+        if ($this->imagesInError > 0) {
+            $this->warn("{$this->imagesInError} images have errors! See images-log.json on the target disk.");
+        }
+
+        return $this->imagesInError > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * @param  array<string, true>  $existingTargets
+     */
+    private function processImage(
+        ImageInfoFromString $image,
+        ImageProcessor $processor,
+        GenerationOptions $options,
+        array $existingTargets,
+        TemporaryDirectory $temporaryDirectory
+    ): void {
+        if (! $options->force && $this->isFullyGenerated($processor, $image, $existingTargets)) {
+            $this->skippedImages++;
+
+            return;
+        }
+
+        try {
+            $generated = $processor->process($image, $temporaryDirectory);
+            $temporaryDirectory->empty();
+        } catch (Throwable $exception) {
+            $this->logError($image, $exception->getMessage());
+            ResponsiveImageGenerationFailed::dispatch($image->getRelativePathname(), $exception->getMessage());
+            $this->error($exception->getMessage());
+
+            return;
+        }
+
+        $this->logGenerated($image, $generated);
         $this->treatedImages++;
     }
 
     /**
-     * The function saves an image to specified sizes by iterating through the filtered sizes, formatting
-     * and optimizing the image, and then saving it to a temporary file before storing it to the target
-     * location.
-     *
-     * @param  Image  $image  An instance of the Image class, representing the image to be saved.
-     * @param  ImageInfoFromString  $imageString  An instance of the `ImageInfoFromString` class, which
-     *                                            contains information about the image file such as its filename and width.
-     * @param  string  $extension  The `extension` parameter is a string that represents the file extension of
-     *                             the image file. It is used to determine the format in which the image should be saved.
+     * @param  Collection<int, ImageInfoFromString>  $images
      */
-    private function saveImageToSpecifiedSizes(Image $image, ImageInfoFromString $imageString, string $extension): void
+    private function dryRun(Collection $images, GenerationOptions $options): int
     {
-        foreach ($imageString->getFilteredSizes($image->getWidth()) as $responsiveWidth) {
-            try {
-                // phpcs:ignore
-                $fileName = "{$imageString->getFilenameWithoutExtension()}{$this->getFilenameSpacer()}$responsiveWidth.$extension";
-                $tempFileName = "{$this->temporaryDirectory->path()}/{$fileName}";
+        $processor = new ImageProcessor($options);
 
-                $imageToResize = Image::load($imageString->getAbsolutePathname());
-                $imageToResize
-                    ->format($extension)
-                    ->width($responsiveWidth)
-                    ->optimize()
-                    ->save($tempFileName);
+        foreach ($images as $image) {
+            $width = $this->knownWidth($image, $options);
+            $paths = $width !== null
+                ? $processor->expectedVariantPaths($image, $width)
+                : $processor->expectedFullSizePaths($image);
 
-                $this->storeFileToTarget($imageString, $tempFileName, $fileName);
-                $this->logGeneratedImages($imageString, $extension, $responsiveWidth);
-            } catch (CouldNotLoadImage|InvalidImageDriver|InvalidManipulation $e) {
-                $this->error($e->getMessage());
-            } catch (Throwable $exception) {
-                $this->error($exception->getMessage());
+            $this->line($image->getRelativePathname());
+            foreach ($paths as $path) {
+                $this->line("  - {$path}");
+            }
+        }
+
+        $this->info("{$images->count()} images would be processed.");
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * @param  Collection<int, ImageInfoFromString>  $images
+     */
+    private function dispatchJobs(Collection $images, GenerationOptions $options, string $queue): int
+    {
+        foreach ($images as $image) {
+            GenerateResponsiveImageJob::dispatch($image->getRelativePathname(), $options->toArray())
+                ->onQueue($queue);
+        }
+
+        $this->info("{$images->count()} image generation jobs dispatched to the [{$queue}] queue.");
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Resolve the run mode from the options, asking interactively when
+     * neither --dry-run nor --queue was given.
+     */
+    private function resolveMode(): void
+    {
+        if ((bool) $this->option('dry-run')) {
+            $this->mode = self::MODE_DRY_RUN;
+
+            return;
+        }
+
+        if ($queue = $this->stringOption('queue')) {
+            $this->mode = self::MODE_QUEUE;
+            $this->queueName = $queue;
+
+            return;
+        }
+
+        $mode = $this->prompted(fn () => select(
+            label: 'How should the images be processed?',
+            options: [
+                self::MODE_PROCESS => 'Process them now',
+                self::MODE_DRY_RUN => 'Dry run — list the files that would be generated',
+                self::MODE_QUEUE => 'Dispatch one job per image to a queue',
+            ],
+            default: self::MODE_PROCESS,
+        ));
+
+        if ($mode === self::MODE_DRY_RUN || $mode === self::MODE_QUEUE) {
+            $this->mode = $mode;
+        }
+
+        if ($this->mode === self::MODE_QUEUE) {
+            $queueName = $this->prompted(fn () => text(
+                label: 'Which queue should the jobs run on?',
+                default: 'default',
+                required: true,
+            ));
+
+            if (is_string($queueName) && $queueName !== '') {
+                $this->queueName = $queueName;
             }
         }
     }
 
-    /**
-     * The `optimizeOriginalImage` function optimizes an original image by applying an optimizer chain and
-     * storing the optimized image to a target location.
-     *
-     * @param  ImageInfoFromString  $imageString  An instance of the `ImageInfoFromString` class that contains
-     *                                            information about the image, such as the filename, absolute pathname, and file extension.
-     * @param  int  $width  The `width` parameter is an integer that represents the desired width of the
-     *                      optimized image.
-     */
-    private function optimizeOriginalImage(ImageInfoFromString $imageString, int $width): void
+    private function resolveOptions(): GenerationOptions
     {
-        try {
-            $newFileName = "{$this->getTargetPath($imageString)}/{$imageString->getFilename()}";
-            $tempFileName = "{$this->temporaryDirectory->path()}/{$imageString->getFilename()}";
+        $options = GenerationOptions::fromConfig();
 
-            $optimizerChain = OptimizerChainFactory::create();
-            $optimizerChain->optimize(
-                $imageString->getAbsolutePathname(),
-                $tempFileName
+        $sourceDisk = $this->resolveSourceDisk($options);
+        $this->singlePath = $this->resolvePath();
+        $sourceDirectory = $this->resolveSourceDirectory($options);
+
+        return new GenerationOptions(
+            sourceDisk: $sourceDisk,
+            sourceDirectory: $sourceDirectory,
+            targetDisk: $options->targetDisk,
+            targetDirectory: $options->targetDirectory,
+            sizes: $this->resolveSizes($options),
+            extensions: $this->resolveExtensions($options),
+            quality: $options->quality,
+            optimize: $options->optimize,
+            force: $this->resolveForce(),
+            filenameSpacer: $options->filenameSpacer,
+        );
+    }
+
+    private function resolveSourceDisk(GenerationOptions $options): string
+    {
+        $disk = $this->stringOption('source-disk') ?? $this->prompted(fn () => select(
+            label: 'Which disk contains the source images?',
+            options: Disks::all($options->sourceDisk),
+            default: $options->sourceDisk,
+        ));
+
+        return is_string($disk) && $disk !== '' ? $disk : $options->sourceDisk;
+    }
+
+    private function resolvePath(): ?string
+    {
+        if ($path = $this->stringOption('path')) {
+            return $path;
+        }
+
+        if ($this->stringOption('relative-source-path') !== null) {
+            return null;
+        }
+
+        return $this->prompted(function () {
+            $scope = select(
+                label: 'What should be generated?',
+                options: [
+                    'directory' => 'Every supported image in a directory',
+                    'file' => 'A single file',
+                ],
+                default: 'directory',
             );
 
-            $this->storeFileToTarget($imageString, $tempFileName);
-            $this->logGeneratedImages($imageString, $imageString->getFileExtension(), $width, $newFileName);
-        } catch (Throwable $exception) {
-            $this->logError($imageString, $exception->getMessage());
-            $this->error($exception->getMessage());
-        }
-    }
+            if ($scope !== 'file') {
+                return null;
+            }
 
-    /**
-     * The function optimizes an original image to a specific file extension and saves it to a temporary
-     * directory.
-     *
-     * @param  Image  $image  An instance of the `Image` class, which represents the original image to be
-     *                        optimized and converted to a specific extension.
-     * @param  ImageInfoFromString  $imageString  An instance of the `ImageInfoFromString` class that contains
-     *                                            information about the original image, such as the filename and other metadata.
-     * @param  string  $extension  The `extension` parameter is a string that represents the desired file
-     *                             extension for the optimized image. It specifies the format in which the image should be saved after
-     *                             optimization.
-     */
-    private function optimizeOriginalImageToSpecificExtension(
-        Image $image,
-        ImageInfoFromString $imageString,
-        string $extension
-    ): void {
-        try {
-            $newFileName = "{$imageString->getFilenameWithoutExtension()}.$extension";
-            $tempFileName = "{$this->temporaryDirectory->path()}/{$newFileName}";
-            $image
-                ->format($extension)
-                ->optimize()
-                ->save($tempFileName);
-            $this->storeFileToTarget($imageString, $tempFileName, $newFileName);
-            $this->logGeneratedImages($imageString, $extension, $image->getWidth(), $newFileName);
-        } catch (CouldNotLoadImage|InvalidImageDriver|InvalidManipulation $e) {
-            $this->logError($imageString, $e->getMessage());
-            $this->error($e->getMessage());
-        } catch (Throwable $exception) {
-            $this->logError($imageString, $exception->getMessage());
-            $this->error($exception->getMessage());
-        }
-    }
-
-    /**
-     * The function stores a file to a target location using the Laravel Storage facade.
-     *
-     * @param  ImageInfoFromString  $imageString  An instance of the ImageInfoFromString class, which contains
-     *                                            information about the image file being stored.
-     * @param  string  $tempFileName  The temporary file name of the image that needs to be stored. This is the
-     *                                file that is currently being processed or uploaded.
-     * @param  string  $newFileName  The `newFileName` parameter is an optional parameter that specifies the
-     *                               name of the file to be stored in the target location. If this parameter is not provided or is empty,
-     *                               the filename from the `ImageInfoFromString` object (`->getFilename()`) will be used as
-     *                               the name
-     */
-    private function storeFileToTarget(ImageInfoFromString $imageString, string $tempFileName, string $newFileName = ''): void
-    {
-        Storage::disk($this->getTargetDisk())
-            ->putFileAs(
-                $this->getTargetPath($imageString),
-                file: $tempFileName,
-                name: empty($newFileName) ? $imageString->getFilename() : $newFileName,
-                options: 'public'
+            $path = text(
+                label: 'Path to the image on the source disk',
+                placeholder: 'images/photo.jpg',
+                required: true,
             );
+
+            return $path === '' ? null : $path;
+        });
     }
 
-    /**
-     * The function returns the relative path of an image given an ImageInfoFromString object.
-     *
-     * @param  ImageInfoFromString  $imageString  An instance of the class `ImageInfoFromString`
-     * @return string the relative path of the image as a string.
-     */
-    private function getTargetPath(ImageInfoFromString $imageString): string
+    private function resolveSourceDirectory(GenerationOptions $options): string
     {
-        return "{$imageString->getRelativePath()}";
-    }
+        $directory = $this->stringOption('relative-source-path');
 
-    /**
-     * The function returns the target file path by concatenating the target path and the filename without
-     * extension from the given ImageInfoFromString object.
-     *
-     * @param  ImageInfoFromString  $imageString  The parameter `` is an instance of the
-     *                                            `ImageInfoFromString` class.
-     * @return string a string that represents the target file path for the given ImageInfoFromString
-     *                object.
-     */
-    private function getTargetFilePath(ImageInfoFromString $imageString): string
-    {
-        return "{$this->getTargetPath($imageString)}/{$imageString->getFilenameWithoutExtension()}";
-    }
-
-    /**
-     * The logError function logs an error message for a given image string and increments the count of
-     * images in error.
-     *
-     * @param  ImageInfoFromString  $imageString  The parameter `` is an instance of the
-     *                                            `ImageInfoFromString` class. It represents an image and contains information about the image, such
-     *                                            as its relative pathname.
-     * @param  string  $message  The `` parameter is a string that represents the error message to be
-     *                           logged.
-     */
-    private function logError(ImageInfoFromString $imageString, string $message): void
-    {
-        if (! Arr::exists($this->logArray['errors'], $imageString->getRelativePathname())) {
-            $this->logArray['errors'][$imageString->getRelativePathname()] = [];
+        if ($directory === null && $this->singlePath === null) {
+            $directory = $this->prompted(fn () => text(
+                label: 'Which directory on the source disk should be scanned?',
+                default: $options->sourceDirectory,
+            ));
         }
 
-        array_push($this->logArray['errors'][$imageString->getRelativePathname()], $message);
+        return is_string($directory) && $directory !== '' ? $directory : $options->sourceDirectory;
+    }
+
+    /**
+     * @return int[]
+     */
+    private function resolveSizes(GenerationOptions $options): array
+    {
+        $sizes = $this->stringOption('sizes') ?? $this->prompted(fn () => text(
+            label: 'Widths to generate, comma-separated',
+            default: implode(',', $options->sizes),
+        ));
+
+        return is_string($sizes) && $sizes !== ''
+            ? array_map('intval', explode(',', $sizes))
+            : $options->sizes;
+    }
+
+    /**
+     * @return string[]
+     */
+    private function resolveExtensions(GenerationOptions $options): array
+    {
+        $extensions = $this->stringOption('extensions') ?? $this->prompted(fn () => text(
+            label: 'Output formats to generate, comma-separated',
+            default: implode(',', $options->extensions),
+        ));
+
+        return is_string($extensions) && $extensions !== ''
+            ? array_map('strtolower', array_map('trim', explode(',', $extensions)))
+            : $options->extensions;
+    }
+
+    private function resolveForce(): bool
+    {
+        if ((bool) $this->option('force') || $this->mode === self::MODE_DRY_RUN) {
+            return (bool) $this->option('force');
+        }
+
+        return $this->prompted(fn () => confirm(
+            label: 'Regenerate variants that already exist on the target disk?',
+            default: false,
+        )) === true;
+    }
+
+    /**
+     * Run the given prompt only when the console is interactive.
+     *
+     * @template TValue
+     *
+     * @param  Closure(): TValue  $prompt
+     * @return TValue|null
+     */
+    private function prompted(Closure $prompt): mixed
+    {
+        return $this->input->isInteractive() ? $prompt() : null;
+    }
+
+    private function stringOption(string $name): ?string
+    {
+        $value = $this->option($name);
+
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    /**
+     * @return Collection<int, ImageInfoFromString>
+     */
+    private function collectImages(GenerationOptions $options): Collection
+    {
+        /** @var string[] $files */
+        $files = $this->singlePath === null
+            ? Storage::disk($options->sourceDisk)->allFiles($options->sourceDirectory)
+            : [$this->singlePath];
+
+        return collect($files)
+            ->map(fn (string $file) => new ImageInfoFromString($file, $options->sourceDisk))
+            ->filter(fn (ImageInfoFromString $image) => $image->isSupportedFile())
+            ->values();
+    }
+
+    /**
+     * @return array<string, true>
+     */
+    private function existingTargetFiles(GenerationOptions $options): array
+    {
+        try {
+            return array_fill_keys(
+                Storage::disk($options->targetDisk)->allFiles($this->targetListingRoot($options)),
+                true
+            );
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    private function targetListingRoot(GenerationOptions $options): string
+    {
+        if ($this->singlePath === null) {
+            return $options->sourceDirectory;
+        }
+
+        $directory = pathinfo($this->singlePath, PATHINFO_DIRNAME);
+
+        return $directory === '.' ? '' : $directory;
+    }
+
+    /**
+     * @param  array<string, true>  $existingTargets
+     */
+    private function isFullyGenerated(
+        ImageProcessor $processor,
+        ImageInfoFromString $image,
+        array $existingTargets
+    ): bool {
+        foreach ($processor->expectedFullSizePaths($image) as $path) {
+            if (! isset($existingTargets[$path])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function knownWidth(ImageInfoFromString $image, GenerationOptions $options): ?int
+    {
+        if (config("filesystems.disks.{$options->sourceDisk}.driver") !== 'local') {
+            return null;
+        }
+
+        $size = @getimagesize(Storage::disk($options->sourceDisk)->path($image->getRelativePathname()));
+
+        return $size === false ? null : $size[0];
+    }
+
+    /**
+     * @param  array<string, string[]>  $generated
+     */
+    private function logGenerated(ImageInfoFromString $image, array $generated): void
+    {
+        foreach ($generated as $extension => $files) {
+            foreach ($files as $file) {
+                $this->logArray['generated'][$image->getRelativePathname()][$extension][] = $file;
+                $this->generatedImages++;
+            }
+        }
+    }
+
+    private function logError(ImageInfoFromString $image, string $message): void
+    {
+        if (! Arr::exists($this->logArray['errors'], $image->getRelativePathname())) {
+            $this->logArray['errors'][$image->getRelativePathname()] = [];
+        }
+
+        $this->logArray['errors'][$image->getRelativePathname()][] = $message;
         $this->imagesInError++;
     }
 
-    /**
-     * The function logs information about generated images, including the image string, extension, width,
-     * and optional new file name.
-     *
-     * @param  ImageInfoFromString  $imageString  The `` parameter is an instance of the
-     *                                            `ImageInfoFromString` class, which contains information about the image such as its relative
-     *                                            pathname.
-     * @param  string  $extension  The "extension" parameter is a string that represents the file extension of
-     *                             the generated image. It is used to determine the file format of the image file, such as "jpg",
-     *                             "png", etc.
-     * @param  int  $width  The "width" parameter in the code snippet represents the width of the generated
-     *                      image. It is an integer value that specifies the desired width of the image.
-     * @param  string  $newFileName  The `newFileName` parameter is an optional parameter that allows you to
-     *                               specify a custom name for the generated image file. If you provide a value for `newFileName`, it
-     *                               will be used as the file name for the generated image. If you don't provide a value for
-     *                               `newFileName`, a
-     */
-    private function logGeneratedImages(
-        ImageInfoFromString $imageString,
-        string $extension,
-        int $width,
-        string $newFileName = ''
-    ): void {
-        if (! Arr::exists($this->logArray['generated'], $imageString->getRelativePathname())) {
-            $this->logArray['generated'][$imageString->getRelativePathname()] = [];
-        }
-        if (! Arr::exists($this->logArray['generated'][$imageString->getRelativePathname()], $extension)) {
-            $this->logArray['generated'][$imageString->getRelativePathname()][$extension] = [];
-        }
-
-        $filName = ! empty($newFileName) ?
-            $newFileName
-            : "{$this->getTargetFilePath($imageString)}{$this->getFilenameSpacer()}$width.$extension";
-
-        $this->logArray['generated'][$imageString->getRelativePathname()][$extension][$width] = $filName;
-
-        $this->generatedImages++;
-    }
-
-    /**
-     * The function `getFilteredImages()` retrieves a collection of image files from a specified disk and
-     * directory, filters out unsupported file types, and returns a collection of `ImageInfoFromString`
-     * objects.
-     *
-     * @return Collection a Collection of ImageInfoFromString objects.
-     */
-    private function getFilteredImages(): Collection
-    {
-        $imageFiles = Storage::disk($this->getSourceDisk())->allFiles($this->getSourceDirectory());
-
-        return collect($imageFiles)
-            ->mapInto(ImageInfoFromString::class)
-            ->filter(function (ImageInfoFromString $image) {
-                return $image->isSupportedFile();
-            });
-    }
-
-    /**
-     * The function `storeLogToJsonFile` stores the log array as a JSON file with a timestamp in the
-     * specified target directory and disk.
-     */
-    private function storeLogToJsonFile(): void
+    private function storeLogToJsonFile(GenerationOptions $options): void
     {
         $this->logArray['generated_on'] = Carbon::now()->format('Y-m-d H:i:s');
 
-        $fileName = "{$this->getTargetDirectory()}/images-log.json";
-        Storage::disk($this->getTargetDisk())->put($fileName, json_encode($this->logArray));
-    }
-
-    private function getTargetDisk(): string
-    {
-        return config('responsive-image-craft.target_disk');
-    }
-
-    private function getTargetDirectory(): string
-    {
-        return config('responsive-image-craft.target_directory');
-    }
-
-    private function getSourceDisk(): string
-    {
-        if ($this->option('source-disk')) {
-            return $this->option('source-disk');
-        }
-
-        return config('responsive-image-craft.source_disk');
-    }
-
-    private function getSourceDirectory(): string
-    {
-        if ($this->option('relative-source-path')) {
-            return $this->option('relative-source-path');
-        }
-
-        return config('responsive-image-craft.source_directory');
-    }
-
-    private function getFilenameSpacer(): string
-    {
-        return config('responsive-image-craft.filename_spacer');
+        Storage::disk($options->targetDisk)->put(
+            "{$options->targetDirectory}/images-log.json",
+            json_encode($this->logArray, JSON_THROW_ON_ERROR)
+        );
     }
 }

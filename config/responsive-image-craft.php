@@ -2,13 +2,13 @@
 
 return [
     /*
-    | Display responsive images in srcset et css variables or display the original one
+    | Display responsive images in srcset and css variables or display the original one.
+    | Legacy key: use_responsive_images
     */
-    'use_responsive_images' => env('USE_RESPONSIVE_IMAGES', true),
+    'enabled' => env('USE_RESPONSIVE_IMAGES', true),
 
     /*
-    | These lines are setting the values of configuration options related to the source and target disks
-    | and directories for the responsive images.
+    | Source and target disks and directories for the responsive images.
     */
     'source_disk' => env('RESPONSIVE_IMAGES_SOURCE_DISK', 'public'),
     'target_disk' => env('RESPONSIVE_IMAGES_TARGET_DISK', 's3'),
@@ -16,17 +16,16 @@ return [
     'target_directory' => env('RESPONSIVE_IMAGES_TARGET_DIRECTORY', 'images'),
 
     /*
-    | The `sizes` array contains a list of image sizes in pixels. These sizes are used to generate
-    | responsive images with different dimensions.
+    | Widths, in pixels, used to generate responsive image variants.
     */
-    'sizes' => explode(',', env('RESPONSIVE_IMAGES_SIZES', '320,640,880,1024,1200,1760,2100')),
+    'sizes' => array_map('intval', explode(',', (string) env('RESPONSIVE_IMAGES_SIZES', '320,640,880,1024,1200,1760,2100'))),
 
     /*
-    | The `extensions` array contains a list of image formats that are supported by the code. These
-    | formats include JPEG (JPG), PNG, AVIF, and WEBP.
-    | @see Spatie\Image\Manipulation for available formats
+    | Formats generated for each source image.
+    | Legacy key: extensions
+    | @see Spatie\Image\Drivers\ImageDriver::format() for available formats
     */
-    'extensions' => [
+    'output_formats' => [
         'jpg',
         'png',
         'avif',
@@ -34,10 +33,11 @@ return [
     ],
 
     /*
-    | The `extensions_filters_rules` array is used to define the image format ignoring rules. Each
-    | key-value pair in the array represents a format and its corresponding ignoring conversions.
+    | Output formats to skip depending on the source format.
+    | e.g. a `jpg` source does not get a `png` output.
+    | Legacy key: extensions_filters_rules
     */
-    'extensions_filters_rules' => [
+    'skip_formats' => [
         'jpg' => ['png'],
         'png' => ['jpg'],
         'webp' => [],
@@ -45,32 +45,26 @@ return [
     ],
 
     /*
-    | The `extensions_to_ignore` array is used to specify image file extensions that should be ignored by
-    | the code. In this case, the code is ignoring SVG files. This means that
-    | any image file with the extension `.svg` will not be processed or included in the responsive images
-    | generation.
+    | Source file extensions never processed.
+    | Legacy key: extensions_to_ignore
     */
-    'extensions_to_ignore' => [
+    'ignored_extensions' => [
         'svg',
     ],
 
     /*
-    | The `filename_to_ignore` array is used to specify image file names that should be ignored by the
-    | code. In this case, the code is ignoring any image file with the name "favicon". This means that any
-    | image file with the name "favicon" will not be processed or included in the responsive images
-    | generation.
+    | Source filenames never processed.
+    | Legacy key: filename_to_ignore
     */
-    'filename_to_ignore' => [
+    'ignored_filenames' => [
         'favicon',
     ],
 
     /*
-    | The `supported_file_extensions` array is defining the list of image formats that are supported by
-    | the code. It includes the formats JPEG (JPG), PNG, AVIF, WEBP, and GIF. This means that the code
-    | will only process and generate responsive images for files with these extensions. Any other image
-    | formats will be ignored.
+    | Accepted source formats.
+    | Legacy key: supported_file_extensions
     */
-    'supported_file_extensions' => [
+    'input_formats' => [
         'jpg',
         'webp',
         'png',
@@ -79,31 +73,38 @@ return [
     ],
 
     /*
-    | The value of `filename_spacer` is used to split filename from image size.
+    | Separator between the filename and the width in generated files.
     | e.g.: `my-image-filename.jpg` => `my-image-filename@1200.jpg`
     */
     'filename_spacer' => '@',
 
     /*
-    | The `'container_css_class_name' => 'img-container',` line is setting the value of the
-    | `'container_css_class_name'` configuration option to `'img-container'`. This configuration
-    | option is used to specify the CSS class name that will be applied to the container element of
-    | the responsive image. By default, the container element will have the CSS class name
-    | `'img-container'`.
+    | CSS class applied to the wrapping container of the responsive image component.
     */
     'container_css_class_name' => 'img-container',
 
     /*
-    | `'scss_path' => resource_path('/scss/utilities'),` is setting the value of the `'scss_path'`
-    | configuration option to the path `/scss/utilities` within the `resources` directory. This
-    | configuration option is used to specify the path to the SCSS where .scss files should be copy
+    | Run generated files through spatie/image-optimizer. Disable when the
+    | optimizer binaries (jpegoptim, optipng, ...) are not installed.
+    */
+    'optimize' => env('RESPONSIVE_IMAGES_OPTIMIZE', true),
+
+    /*
+    | Compression quality per output format (0-100). Empty keeps driver defaults.
+    */
+    'quality' => [
+        // 'jpg' => 80,
+        // 'webp' => 80,
+        // 'avif' => 65,
+    ],
+
+    /*
+    | Publish target for the SCSS files.
     */
     'scss_path' => resource_path('/scss/utilities'),
 
     /*
-    | The line `'js_path' => resource_path('/js'),` is setting the value of the `'js_path'`
-    | configuration option to the path `/js` within the `resources` directory. This configuration
-    | option is used to specify the path to the JavaScript files that should be copied.
+    | Publish target for the JS files.
     */
     'js_path' => resource_path('/js'),
 ];

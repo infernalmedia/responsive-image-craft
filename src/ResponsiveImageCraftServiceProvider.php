@@ -2,14 +2,18 @@
 
 namespace Infernalmedia\ResponsiveImageCraft;
 
+use Infernalmedia\ResponsiveImageCraft\Commands\CleanResponsiveImages;
 use Infernalmedia\ResponsiveImageCraft\Commands\GenerateResponsiveImages;
+use Infernalmedia\ResponsiveImageCraft\Support\LegacyConfig;
 use Infernalmedia\ResponsiveImageCraft\View\Components\ResponsiveImg;
+use Override;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-class ResponsiveImageCraftServiceProvider extends PackageServiceProvider
+final class ResponsiveImageCraftServiceProvider extends PackageServiceProvider
 {
+    #[Override]
     public function configurePackage(Package $package): void
     {
         /*
@@ -22,7 +26,10 @@ class ResponsiveImageCraftServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->hasViews()
             ->hasViewComponent('infernal', ResponsiveImg::class)
-            ->hasCommand(GenerateResponsiveImages::class)
+            ->hasCommands([
+                GenerateResponsiveImages::class,
+                CleanResponsiveImages::class,
+            ])
             ->hasInstallCommand(function (InstallCommand $command) {
                 $command
                     ->publishConfigFile()
@@ -33,6 +40,11 @@ class ResponsiveImageCraftServiceProvider extends PackageServiceProvider
                         );
                     });
             });
+    }
+
+    public function packageRegistered(): void
+    {
+        LegacyConfig::apply();
     }
 
     public function packageBooted(): void

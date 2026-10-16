@@ -6,10 +6,10 @@ Guidance for coding agents working on `infernalmedia/responsive-image-craft`.
 
 Laravel package that generates responsive image variants (configured sizes × formats) with an Artisan command, then displays them through a Blade component, a `getCssVariables()` facade and publishable SCSS mixins.
 
-- PHP `^8.2`, Laravel 9–13 (`illuminate/contracts`), PSR-4 namespace `Infernalmedia\ResponsiveImageCraft`
+- PHP `^8.4`, Laravel `^12|^13` (`illuminate/contracts`), PSR-4 namespace `Infernalmedia\ResponsiveImageCraft`
 - Built on `spatie/laravel-package-tools`, `spatie/image`, `spatie/image-optimizer`, `spatie/temporary-directory`
-- Tests: Pest 2 (+ arch plugin) on Orchestra Testbench
-- Static analysis: Larastan/PHPStan level 4 — Code style: Laravel Pint
+- Tests: Pest 5 (+ arch plugin) on Orchestra Testbench 10–11
+- Static analysis: Larastan/PHPStan level 8 — Code style: Laravel Pint
 
 ## Setup
 
@@ -35,14 +35,15 @@ There is no frontend build step: `resources/js` and `resources/scss` are publish
 - Tests use Pest syntax (`test()`/`it()`/`expect()`), not PHPUnit test classes. `tests/TestCase.php` extends Orchestra Testbench and registers the package service provider.
 - `tests/ArchTest.php` forbids `dd`, `dump` and `ray` — never use them.
 - Run `composer format` before committing; Pint uses its default Laravel preset (no config file).
-- `composer analyse` must pass: PHPStan level 4 over `src/` and `config/`.
+- `composer analyse` must pass: PHPStan level 8 over `src/`, `config/` and `tests/`.
 - Commit messages follow Conventional Commits in English, e.g. `feat:`, `fix(scope):`, `chore:` (see git history).
-- Every tunable lives in `config/responsive-image-craft.php`; source/target disks, directories and sizes have env fallbacks.
-- Generated variants are named `filename@{width}.{ext}`; the `filename_spacer` (`@`) is shared by the command, the component, the facade and the SCSS (`$filenameSpacer`) — keep them consistent.
+- Every tunable lives in `config/responsive-image-craft.php`; source/target disks, directories and sizes have env fallbacks. v1 config keys (`enabled`, `output_formats`, `skip_formats`, `ignored_extensions`, `ignored_filenames`, `input_formats`) are read through `Support/PackageConfig`; `Support/LegacyConfig` maps old 0.x keys when a published config still uses them.
+- Generated variants are named `filename@{width}.{ext}`; the `filename_spacer` (`@`) is shared by `SrcsetGenerator`, the component, the facade and the SCSS (`$filenameSpacer`) — keep them consistent.
+- `composer test` must stay at 100% line coverage (Pest `--coverage`).
 
 ## Repository layout
 
-- `src/` — service provider, Artisan command, core class, `ImageInfoFromString`, view component, facade, exception
+- `src/` — service provider, `Commands/` (generate + clean), `Jobs/`, `Support/` (PackageConfig, LegacyConfig, DiskUrlResolver, SourceImageResolver, GenerationOptions, SrcsetGenerator, ImageProcessor), `Events/`, core class, `ImageInfoFromString`, view component, facade, exception
 - `config/responsive-image-craft.php` — package configuration
 - `resources/views/` — Blade component template
 - `resources/scss/` — publishable mixins and helper functions
@@ -51,7 +52,7 @@ There is no frontend build step: `resources/js` and `resources/scss` are publish
 
 ## CI (GitHub Actions)
 
-- `run-tests.yml`: Pest on ubuntu + windows, PHP 8.2, Laravel 10, prefer-lowest/prefer-stable
+- `run-tests.yml`: Pest on ubuntu, PHP 8.4/8.5 × Laravel 12/13, prefer-lowest/prefer-stable, plus a dedicated coverage job (pcov → Codecov). The test job runs `pest --no-coverage` since the runners have no coverage driver.
 - `phpstan.yml`: static analysis
 - `fix-php-code-style-issues.yml`: runs Pint and auto-commits fixes
 - `update-changelog.yml`, `dependabot-auto-merge.yml`: release/dependency automation

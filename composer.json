@@ -16,29 +16,29 @@
         }
     ],
     "require": {
-        "php": "^8.2",
+        "php": "^8.4",
+        "laravel/prompts": "^0.3.25",
         "spatie/image": "^3.7",
         "spatie/image-optimizer": "^1.7",
         "spatie/laravel-package-tools": "^1.16.0",
         "spatie/temporary-directory": "^2.1",
-        "illuminate/contracts": "^9.0|^10.0|^11.0|^12.0|^13.0"
+        "illuminate/contracts": "^12.0|^13.0"
     },
     "require-dev": {
+        "larastan/larastan": "^3.0",
         "laravel/pint": "^1.0",
-        "nunomaduro/collision": "^7.9",
-        "larastan/larastan": "^2.0.1",
-        "orchestra/testbench": "^8.0",
-        "pestphp/pest": "^2.16",
-        "pestphp/pest-plugin-arch": "^2.0",
-        "pestphp/pest-plugin-laravel": "^2.0",
+        "nunomaduro/collision": "^8.9",
+        "orchestra/testbench": "^10.0|^11.0",
+        "pestphp/pest": "^4.0|^5.0",
+        "pestphp/pest-plugin-arch": "^4.0|^5.0",
+        "pestphp/pest-plugin-laravel": "^4.0|^5.0",
         "phpstan/extension-installer": "^1.1",
-        "phpstan/phpstan-deprecation-rules": "^1.0",
-        "phpstan/phpstan-phpunit": "^1.0"
+        "phpstan/phpstan-deprecation-rules": "^2.0",
+        "phpstan/phpstan-phpunit": "^2.0"
     },
     "autoload": {
         "psr-4": {
-            "Infernalmedia\\ResponsiveImageCraft\\": "src/",
-            "Infernalmedia\\ResponsiveImageCraft\\Database\\Factories\\": "database/factories/"
+            "Infernalmedia\\ResponsiveImageCraft\\": "src/"
         }
     },
     "autoload-dev": {
@@ -70,7 +70,5 @@
                 "ResponsiveImageCraft": "Infernalmedia\\ResponsiveImageCraft\\Facades\\ResponsiveImageCraft"
             }
         }
-    },
-    "minimum-stability": "dev",
-    "prefer-stable": true
+    }
 }

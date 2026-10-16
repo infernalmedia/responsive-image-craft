@@ -15,10 +15,19 @@ Source images are read from a configurable filesystem disk, optimized, converted
 ## Source
 
 - [ResponsiveImageCraftServiceProvider](src/ResponsiveImageCraftServiceProvider.php): package wiring via spatie/laravel-package-tools, asset publishing, `infernal` component prefix, install command
-- [GenerateResponsiveImages](src/Commands/GenerateResponsiveImages.php): `responsive-image-craft:generate` Artisan command (scan, filter, optimize, resize, store, JSON log)
+- [GenerateResponsiveImages](src/Commands/GenerateResponsiveImages.php): `responsive-image-craft:generate` Artisan command (scan, filter, skip-if-generated, orchestrate, JSON log)
+- [CleanResponsiveImages](src/Commands/CleanResponsiveImages.php): `responsive-image-craft:clean` removes stale variants
+- [GenerateResponsiveImageJob](src/Jobs/GenerateResponsiveImageJob.php): per-image job dispatched by `--queue`
+- [ImageProcessor](src/Support/ImageProcessor.php): optimize/convert/resize pipeline (one decode per format)
+- [GenerationOptions](src/Support/GenerationOptions.php): normalized generation settings from config + CLI
+- [SrcsetGenerator](src/Support/SrcsetGenerator.php): variant filenames, urls and srcset entries
+- [PackageConfig](src/Support/PackageConfig.php) + [LegacyConfig](src/Support/LegacyConfig.php): typed config accessors with 0.x key fallback
+- [SourceImageResolver](src/Support/SourceImageResolver.php): local path or remote-disk temp download
+- [DiskUrlResolver](src/Support/DiskUrlResolver.php): disk `url` resolution and local-driver detection
+- [Events](src/Events): `ResponsiveImageGenerated` / `ResponsiveImageGenerationFailed`
 - [ResponsiveImageCraft](src/ResponsiveImageCraft.php): core class exposing `getCssVariables()`
 - [ImageInfoFromString](src/ImageInfoFromString.php): image path parsing plus extension/size/filename filtering rules
-- [ResponsiveImg](src/View/Components/ResponsiveImg.php): Blade component class building `srcset`, mime types, lazy/decoding attributes
+- [ResponsiveImg](src/View/Components/ResponsiveImg.php): Blade component class building `srcset`, mime types, lazy/decoding attributes, auto width/height
 - [ResponsiveImageCraft facade](src/Facades/ResponsiveImageCraft.php): facade accessor for the core class
 - [InvalidDiskException](src/Exceptions/InvalidDiskException.php): thrown when a configured disk has no usable `url`
 
@@ -31,4 +40,4 @@ Source images are read from a configurable filesystem disk, optimized, converted
 
 ## Tests
 
-- [tests](tests): Pest 2 suite on Orchestra Testbench, including an architecture test
+- [tests](tests): Pest 5 suite on Orchestra Testbench (100% line coverage), including an architecture test
