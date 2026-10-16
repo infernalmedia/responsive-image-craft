@@ -196,19 +196,146 @@ Each entry is prefixed with the **target disk `url`** (source disk when `enabled
 
 ## SCSS helpers
 
-Import the helpers published by the package:
+The package ships two Sass partials for responsive `background-image` usage. Publish them with:
 
-```scss
-@use "responsive-image-craft/responsive-background-images" as ri;
+```bash
+php artisan vendor:publish --tag=responsive-image-craft-scss
 ```
 
-`ri.background-image()` emits a `background-image` for each `--image-{size}px` variable, inside the matching `min-width` media query:
+The SCSS lands in `scss_path` (`resources/scss/utilities` by default) and `AssetsScssFile.js` in `js_path` (`resources/js`).
+
+### The `_assets.scss` partial
+
+Both helpers `@use "../assets"`, so they expect a `_assets.scss` partial **one directory above** them (`resources/scss/_assets.scss` by default) exposing two variables:
+
+```scss
+// resources/scss/_assets.scss
+$assetsUrl: "https://cdn.example.com"; // or null for relative URLs
+$filenameSpacer: "@"; // must match the filename_spacer config
+```
+
+`AssetsScssFile` generates this file at build time from your env vars — call it in `vite.config.js` or a build script:
+
+```js
+import { AssetsScssFile } from "./resources/js/AssetsScssFile";
+
+new AssetsScssFile().createSCSSFile(
+    new Map([
+        ["$assetsUrl", process.env.VITE_ASSETS_URL],
+        ["$filenameSpacer", "@"],
+    ]),
+);
+// writes ./resources/scss/_assets.scss — pass a custom path to the
+// constructor if your layout differs (one level above the mixins)
+```
+
+### `responsive-background-image()`
+
+Builds every variant URL from a relative path — the most straightforward option for static assets:
+
+```scss
+@use "utilities/responsive-background-images" as ri;
+
+.card {
+    @include ri.responsive-background-image(
+        "images/photo.jpg",
+        // path relative to $assetsUrl
+        (jpg, webp, avif),
+        // formats to include in image-set()
+        (640, 320) // breakpoints — largest first
+    );
+}
+```
+
+Compiles to (simplified):
+
+```css
+.card {
+    background-image: url("https://cdn.example.com/images/photo.jpg");
+    background-image: image-set(
+        url("…/photo.jpg") type("image/jpeg"),
+        url("…/photo.webp") type("image/webp"),
+        url("…/photo.avif") type("image/avif")
+    );
+}
+@media only screen and (max-width: 639px) {
+    .card {
+        background-image: url("…/photo@640.jpg");
+        background-image: image-set(…);
+    }
+}
+@media only screen and (max-width: 319px) {
+    .card {
+        background-image: url("…/photo@320.jpg");
+        background-image: image-set(…);
+    }
+}
+```
+
+The breakpoints are the generated `name@width.ext` widths — **unitless numbers**, listed **largest to smallest** so the smallest matching variant wins the `max-width` cascade.
+
+### `responsive-background-image-from-existing-css-var()`
+
+Pairs with `ResponsiveImageCraft::getCssVariables()` for dynamic images (CMS-driven, user uploads). Render the variables inline:
+
+```blade
+<div class="hero" style="{!! ResponsiveImageCraft::getCssVariables('images/hero.jpg', 880) !!}">
+    …
+</div>
+```
+
+`getCssVariables()` emits `--{ext}-full` and `--{ext}-{width}` custom properties (`--jpg-full:url(…)`, `--webp-640:url(…)`, …). The mixin turns them into media queries:
 
 ```scss
 .hero {
-    @include ri.background-image;
+    @include ri.responsive-background-image-from-existing-css-var(
+        (full, 880, 640, 320),
+        // full first, sizes largest to smallest
+        (jpg, webp),
+        // must match the extensions passed in PHP
+        full // the marker used for the original image
+    );
 }
 ```
+
+```css
+.hero {
+    background-image: var(--jpg-full);
+    background-image: image-set(
+        var(--jpg-full) type("image/jpeg"),
+        var(--webp-full) type("image/webp")
+    );
+}
+@media only screen and (max-width: 879px) {
+    .hero {
+        background-image: var(--jpg-880);
+        background-image: image-set(…);
+    }
+}
+@media only screen and (max-width: 639px) {
+    .hero {
+        background-image: var(--jpg-640);
+        background-image: image-set(…);
+    }
+}
+```
+
+The **first extension in the list** is the plain `background-image` fallback — put the most compatible format first (e.g. `jpg`).
+
+### `media-query()`
+
+A small helper also used internally — handy on its own:
+
+```scss
+@include ri.media-query(640px) { … }      // min-width (default)
+@include ri.media-query(640px, max) { … } // max-width: 639px
+```
+
+### Lower-level functions
+
+`_assets-url-helper.scss` exposes URL helpers under the same namespace if you need them in your own Sass: `construct-image-url()`, `construct-assets-url()`, `generate-image-urls()`, `generate-image-variants()`, `generate-image-set()`, `get-extension()`, `get-mime-type()`, `get-mime-type-from-url()`, `remove-extension()`.
+
+The partials also emit a `.img-container` utility class (`max-width: 100%` with a responsive nested `img`).
 
 ## Testing
 

@@ -17,6 +17,11 @@ All notable changes to `responsive-image-craft` will be documented in this file.
 - Component attributes are merged onto `<img>`; `img-attributes` renders raw instead of escaped.
 - Invalid `image/pjpg` MIME type fixed; `<source>` elements without a MIME type are skipped.
 - Source images on remote disks can be processed (streamed to a temporary directory).
+- Same-extension output no longer overwrites the stored original image.
+- SCSS helpers: missing `/` separator between `$assetsUrl` and the relative path in `construct-image-url()`.
+- SCSS helpers: `image-set()` entries no longer emit the literal `get-mime-type($extension)` call — the MIME type is interpolated into `type(...)`.
+- SCSS helpers: original-image rules are emitted before the `max-width` media queries so variants actually override them (was dead CSS).
+- SCSS helpers: one media query per breakpoint instead of one per extension in `responsive-background-image-from-existing-css-var`; the mixin's `$file-name-spacer` argument is now propagated.
 
 ### Added
 

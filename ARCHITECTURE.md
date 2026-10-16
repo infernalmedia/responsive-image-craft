@@ -68,10 +68,11 @@ Failures are caught per file, logged, echoed and surfaced through `ResponsiveIma
 - `ResponsiveImageCraft::getCssVariables($file, $maxWidth, $extensions)` — exposed through the `ResponsiveImageCraft` facade — returns inline CSS custom properties: `--{ext}-full:url(...)` plus one `--{ext}-{width}:url(...)` per configured size `<= $maxWidth`. Paths are prefixed with the **target** disk `url` when `enabled` (source disk otherwise); absolute URLs are left untouched.
 - `resources/scss/_responsive-background-images.scss` provides:
     - `media-query($width, $type)` — min/max media query helper
-    - `responsive-background-image-from-existing-css-var($sizes, $extensions, $full)` — consumes the generated `--{ext}-{size}` variables
-    - `responsive-background-image($base-relative-path, $extensions, $breakpoints, $file-name-spacer)` — builds variant urls directly
+    - `responsive-background-image-from-existing-css-var($sizes, $extensions, $full)` — consumes the generated `--{ext}-{size}` variables; the `full` rules are emitted first so sized `max-width` media queries can override them
+    - `responsive-background-image($base-relative-path, $extensions, $breakpoints, $file-name-spacer)` — builds variant urls directly; same original-first ordering
     - the `.img-container` styles used by the Blade component
-- `resources/scss/_assets-url-helper.scss` provides pure functions: `construct-image-url`, `construct-assets-url`, `generate-image-urls`, `generate-image-variants`, `generate-image-set`, `get-extension`, `get-mime-type`, `remove-extension`.
+    - both mixins emit breakpoints in list order — callers pass them largest to smallest so the smallest matching variant wins the `max-width` cascade
+- `resources/scss/_assets-url-helper.scss` provides pure functions: `construct-image-url`, `construct-assets-url`, `generate-image-urls`, `generate-image-variants`, `generate-image-set`, `get-extension`, `get-mime-type`, `get-mime-type-from-url`, `remove-extension`. MIME types are emitted through `type("#{get-mime-type(...)}")` interpolation — plain `type(fn())` would leak the unevaluated Sass call into the CSS.
 - `resources/js/AssetsScssFile.js` is imported in the host app's `vite.config.js`; `createSCSSFile()` writes `resources/scss/_assets.scss` containing `$assetsUrl` and `$filenameSpacer` from env (`VITE_ASSETS_URL`, `VITE_RESPONSIVE_IMAGES_FILENAME_SPACER`), with a configurable destination path. Both SCSS files `@use "../assets"` to read them.
 - SCSS and JS folders are published together via `php artisan vendor:publish --tag=responsive-image-craft-scss` into `scss_path` and `js_path`.
 

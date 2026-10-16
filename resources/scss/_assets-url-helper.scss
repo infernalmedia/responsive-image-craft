@@ -49,7 +49,7 @@ $filenameSpacer: "@" !default;
     $mimeTypes: (
         "jpg": "image/jpeg",
         "jpeg": "image/jpeg",
-        "pjpg": "image/pjpg",
+        "pjpg": "image/jpeg",
         "png": "image/png",
         "gif": "image/gif",
         "webp": "image/webp",
@@ -57,9 +57,9 @@ $filenameSpacer: "@" !default;
         "tiff": "image/tiff",
     );
 
-    $type: map.get($mimeTypes, quote($extension));
+    $type: map.get($mimeTypes, string.quote($extension));
     @if ($type) {
-        @return quote($type);
+        @return string.quote($type);
     } @else {
         @error "Mime Type not found for '#{$extension}'";
     }
@@ -84,7 +84,10 @@ $filenameSpacer: "@" !default;
  * @return {url} - The constructed URL for the asset.
  */
 @function construct-assets-url($relative-url, $base-url: $assetsUrl) {
-    $separator: if($base-url and string.slice($base-url, -1) != "/", "/", "");
+    $separator: "";
+    @if $base-url and string.slice($base-url, -1) != "/" {
+        $separator: "/";
+    }
 
     @if $base-url {
         @return url("#{$base-url}#{$separator}#{$relative-url}");
@@ -179,13 +182,12 @@ $filenameSpacer: "@" !default;
 @function construct-image-url($relative-url, $base-url: $assetsUrl) {
     @if $base-url {
         $separator: "";
-        $lastSlashIndex: string.index($base-url, "/");
-        @if ($lastSlashIndex == string.length($base-url) - 1) {
+        @if string.slice($base-url, -1) != "/" {
             $separator: "/";
         }
-        @return url(quote("#{$base-url}#{$separator}#{$relative-url}"));
+        @return url(string.quote("#{$base-url}#{$separator}#{$relative-url}"));
     } @else {
-        @return url(quote($relative-url));
+        @return url(string.quote($relative-url));
     }
 }
 
@@ -200,7 +202,7 @@ $filenameSpacer: "@" !default;
     @each $extension, $url in $variants {
         $imageSet: list.append(
             $imageSet,
-            $url type(get-mime-type($extension)),
+            $url type("#{get-mime-type($extension)}"),
             $separator: comma
         );
     }
