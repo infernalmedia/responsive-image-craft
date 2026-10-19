@@ -22,37 +22,47 @@
 /**
  * Mixin to generate responsive background images using existing CSS vars.
  *
- * @param {list} $sizes - List of sizes (breakpoints).
- * @param {list} $extensions - List of image extensions.
- * @param {string} $full - The 'full' size.
+ * Emits `background-image`/`image-set()` for each `--{extension}-{size}` custom
+ * property. The `$full` entry is emitted first (unconditionally) so the sized
+ * media queries can override it. List sized breakpoints from largest to
+ * smallest so the smallest matching variant wins the cascade.
+ *
+ * @param {list} $sizes - List of sizes, including the $full marker.
+ * @param {list} $extensions - List of image extensions. The first one is used
+ *        as the plain `background-image` fallback.
+ * @param {string} $full - The 'full' size marker.
  */
 @mixin responsive-background-image-from-existing-css-var(
     $sizes,
     $extensions,
     $full
 ) {
+    $fallback-extension: list.nth($extensions, 1);
+    $full-images: ();
+    @each $extension in $extensions {
+        $full-images: list.append(
+            $full-images,
+            var(--#{$extension}-#{$full}) type("#{get-mime-type($extension)}"),
+            $separator: comma
+        );
+    }
+    background-image: var(--#{$fallback-extension}-#{$full});
+    background-image: image-set($full-images);
+
     @each $size in $sizes {
-        $images: ();
-        @each $extension in $extensions {
-            @if $size == $full {
-                background-image: var(--#{$extension}-full);
-                $images: list.append(
-                    $images,
-                    var(--#{$extension}-full) type(get-mime-type($extension)),
-                    $separator: comma
-                );
-                background-image: image-set($images);
-            } @else {
-                @include media-query($size, max) {
-                    background-image: var(--#{$extension}-#{$size});
+        @if $size != $full {
+            @include media-query($size, max) {
+                background-image: var(--#{$fallback-extension}-#{$size});
+                $images: ();
+                @each $extension in $extensions {
                     $images: list.append(
                         $images,
                         var(--#{$extension}-#{$size})
-                            type(get-mime-type($extension)),
+                            type("#{get-mime-type($extension)}"),
                         $separator: comma
                     );
-                    background-image: image-set($images);
                 }
+                background-image: image-set($images);
             }
         }
     }
@@ -60,6 +70,10 @@
 
 /**
  * Mixin to generate responsive background images.
+ *
+ * The original image is emitted first so the sized media queries can override
+ * it. List breakpoints from largest to smallest so the smallest matching
+ * variant wins the cascade.
  *
  * @param {string} $base-relative-path - The base relative path.
  * @param {list} $extensions - List of image extensions.
@@ -73,34 +87,27 @@
     $file-name-spacer: $filenameSpacer
 ) {
     $default-extension: get-extension($base-relative-path);
-    $variant-urls: generate-image-variants(
-        $base-relative-path,
-        $breakpoints,
-        $extensions
-    );
-
-    @each $breakpoint, $variants in $variant-urls {
-        @include media-query($breakpoint, max) {
-            $bgImage: map.get($variants, $default-extension);
-            background-image: $bgImage;
-            $imageSet: ();
-            @each $extension, $url in $variants {
-                $imageSet: list.append(
-                    $imageSet,
-                    $url type(get-mime-type($extension)),
-                    $separator: comma
-                );
-            }
-            background-image: image-set($imageSet);
-        }
-    }
-
     $original-img-variants: generate-image-urls(
         $base-relative-path,
         $extensions
     );
     background-image: construct-image-url($base-relative-path);
     background-image: image-set(generate-image-set($original-img-variants));
+
+    $variant-urls: generate-image-variants(
+        $base-relative-path,
+        $breakpoints,
+        $extensions,
+        $file-name-spacer: $file-name-spacer
+    );
+
+    @each $breakpoint, $variants in $variant-urls {
+        @include media-query($breakpoint, max) {
+            $bgImage: map.get($variants, $default-extension);
+            background-image: $bgImage;
+            background-image: image-set(generate-image-set($variants));
+        }
+    }
 }
 
 /**
