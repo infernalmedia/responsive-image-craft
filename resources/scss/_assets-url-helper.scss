@@ -1,10 +1,10 @@
-@use 'sass:map';
-@use 'sass:string';
-@use 'sass:list';
-@use '../assets' as *;
+@use "sass:map";
+@use "sass:string";
+@use "sass:list";
+@use "../assets" as *;
 
 $assetsUrl: null !default;
-$filenameSpacer: '@' !default;
+$filenameSpacer: "@" !default;
 
 /**
  * Remove the file extension from a given absolute URL.
@@ -14,7 +14,7 @@ $filenameSpacer: '@' !default;
  */
 @function remove-extension($url) {
     $extension: get-extension($url);
-    $extension-index: string.index($url, '.#{$extension}');
+    $extension-index: string.index($url, ".#{$extension}");
     @if $extension-index > 1 {
         @return string.slice($url, 1, $extension-index - 1);
     } @else {
@@ -29,7 +29,7 @@ $filenameSpacer: '@' !default;
  * @return {string} - The extracted file extension or error if not found.
  */
 @function get-extension($url) {
-    $parts: string.split(($url), '.');
+    $parts: string.split(($url), ".");
     $parts-count: length($parts);
     @if $parts-count > 1 {
         $extension: nth($parts, $parts-count);
@@ -47,19 +47,19 @@ $filenameSpacer: '@' !default;
  */
 @function get-mime-type($extension) {
     $mimeTypes: (
-        'jpg': 'image/jpeg',
-        'jpeg': 'image/jpeg',
-        'pjpg': 'image/pjpg',
-        'png': 'image/png',
-        'gif': 'image/gif',
-        'webp': 'image/webp',
-        'avif': 'image/avif',
-        'tiff': 'image/tiff',
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+        "pjpg": "image/pjpg",
+        "png": "image/png",
+        "gif": "image/gif",
+        "webp": "image/webp",
+        "avif": "image/avif",
+        "tiff": "image/tiff",
     );
 
-    $type: map-get($mimeTypes, quote($extension));
+    $type: map.get($mimeTypes, string.quote($extension));
     @if ($type) {
-        @return quote($type);
+        @return string.quote($type);
     } @else {
         @error "Mime Type not found for '#{$extension}'";
     }
@@ -84,10 +84,12 @@ $filenameSpacer: '@' !default;
  * @return {url} - The constructed URL for the asset.
  */
 @function construct-assets-url($relative-url, $base-url: $assetsUrl) {
-    $separator: if($base-url and str-slice($base-url, -1) != '/', '/', '');
+    $separator: if(
+        sass($base-url and str-slice($base-url, -1) != "/"): "/" ; else: "",
+    );
 
     @if $base-url {
-        @return url('#{$base-url}#{$separator}#{$relative-url}');
+        @return url("#{$base-url}#{$separator}#{$relative-url}");
     } @else {
         @return url($relative-url);
     }
@@ -114,15 +116,15 @@ $filenameSpacer: '@' !default;
 
     $relative-path: remove-extension($relative-path);
     @each $extension in $extensions {
-        $url: '';
+        $url: "";
         @if ($suffix != null) {
             $url: construct-image-url(
-                '#{$relative-path}#{$file-name-spacer}#{$suffix}.#{$extension}',
+                "#{$relative-path}#{$file-name-spacer}#{$suffix}.#{$extension}",
                 $base-url
             );
         } @else {
             $url: construct-image-url(
-                '#{$relative-path}.#{$extension}',
+                "#{$relative-path}.#{$extension}",
                 $base-url
             );
         }
@@ -178,14 +180,14 @@ $filenameSpacer: '@' !default;
  */
 @function construct-image-url($relative-url, $base-url: $assetsUrl) {
     @if $base-url {
-        $separator: '';
-        $lastSlashIndex: string.index($base-url, '/');
+        $separator: "";
+        $lastSlashIndex: string.index($base-url, "/");
         @if ($lastSlashIndex == string.length($base-url) -1) {
-            $separator: '/';
+            $separator: "/";
         }
-        @return url(quote('#{$base-url}#{$separator}#{$relative-url}'));
+        @return url(string.quote("#{$base-url}#{$separator}#{$relative-url}"));
     } @else {
-        @return url(quote($relative-url));
+        @return url(string.quote($relative-url));
     }
 }
 
@@ -200,7 +202,7 @@ $filenameSpacer: '@' !default;
     @each $extension, $url in $variants {
         $imageSet: list.append(
             $imageSet,
-            $url type(get-mime-type($extension)),
+            $url type("#{get-mime-type($extension)}"),
             $separator: comma
         );
     }
